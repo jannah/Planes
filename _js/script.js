@@ -8,10 +8,35 @@
 $(document).ready(function() {
     init();
 });
+var data_file = "_data/clean_planes.csv";
+var quant_list = ["id", "month", "year", "total_fatalities",
+    "total_occupants", "passengers_occupants", "crew_occupants",
+    "passengers_fatalities", "crew_fatalities"];
 
-var data_file="_data\clean_planes.csv";
-function init(){
+var data = [];
+function init()
+{
+    data = loadData(data_file);
+}
+
+function loadData(filename)
+{
+    var data = readCSV(filename);
+    for (var i = 0, j = data.length; i < j; i++)
+    {
+        for (var k in quant_list)
+        {
+            var key = quant_list[k];
+            data[i][key] = parseInt(data[i][key]);
+        }
+        data[i]["date"] = new Date(data[i]["date"]);
+    }
+
+    return data;
+}
+
+
+function drawCurve(id)
+{
     
-   var data = readCSV(data_file);
-   console.log(data)
 }

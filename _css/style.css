@@ -7,4 +7,31 @@ and open the template in the editor.
     Created on : Apr 28, 2014, 9:44:08 PM
     Author     : Jannah
 */
-
+.circle, .line{
+    /*display:none;*/
+}
+.point,.guide-line{
+    display:block
+        ;
+}
+.guide{
+    /*display:none;*/
+}
+  .curve, .line {
+        fill: none;
+        stroke-width: 1px;
+      }
+      .curve {
+        stroke: red;
+        stroke-width: 3px;
+        
+      }
+      .control {
+        fill: #ccc;
+        stroke: #000;
+        stroke-width: .5px;
+        
+      }
+      .t, .controltext {
+        font-size: .6em;
+      }
