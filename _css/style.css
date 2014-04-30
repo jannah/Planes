@@ -23,13 +23,14 @@ and open the template in the editor.
       }
       .curve {
         stroke: red;
-        stroke-width: 3px;
+        stroke-width: .5px;
         
       }
       .control {
         fill: #ccc;
         stroke: #000;
-        stroke-width: .5px;
+        stroke-width: .1px;
+        display:none;
         
       }
       .t, .controltext {

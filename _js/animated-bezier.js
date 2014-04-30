@@ -1,153 +1,177 @@
+$(document).ready(function() {
+    initBezier();
+});
 var w = 800,
         h = 300,
         t = .5,
         delta = .01,
         padding = 10,
-        points = [{x: 10, y: 250},
-            {x: 200, y: 250},
-            {x: 100, y: 120},
-            {x: 200, y: 50},
-            {x: 300, y: 130},
-            {x: 400, y: 130},
-            {x: 500, y: 50},
-            {x: 600, y: 120},
-            {x: 500, y: 250},
-            {x: 700, y: 250}],
-        bezier = {},
+        points = [{x: 10, y: 280},
+            {x: 200, y: 280},
+            {x: 100, y: 200},
+            {x: 200, y: 100},
+            {x: 300, y: 210},
+            {x: 400, y: 210},
+            {x: 500, y: 100},
+            {x: 600, y: 200},
+            {x: 500, y: 280},
+            {x: 700, y: 280}],
+//        bezier = {},
+        beziers = [],
+        pointsList = [],
         line = d3.svg.line().x(x).y(y),
         n = 4,
         stroke = d3.scale.category20b(),
-        orders = d3.range(2, n + 2);
+        orders = d3.range(2, n + 2),
+        vis, charts = [], last = 0, chartCount = 200, weight = 2, wild = 50;
 //    console.log(points.length);
-var vis = d3.select("#vis").selectAll("svg")
-        .data([points.length]).enter()
-        .append("svg")
-        .attr("width", w + 2 * padding)
-        .attr("height", h + 2 * padding)
-        .append("g")
-        .attr("transform", "translate(" + padding + "," + padding + ")");
+function getRandom(i)
+{
+    return Math.floor(Math.random() * 2 * wild) - wild;
+}
+function initBezier()
+{
+    for (var i = 0; i < chartCount; i++)
+    {
+        var pts = [];
+        for (var j = 0, k = points.length; j < k; j++)
+        {
+            var pt = {x: points[j].x, y: points[j].y};
 
-update();
-/*
- vis.selectAll("circle.control")
- .data(points)
- .enter().append("circle")
- .attr("class", "control")
- .attr("r", 7)
- .attr("cx", x)
- .attr("cy", y)
- .call(d3.behavior.drag()
- .on("dragstart", function(d) {
- console.log(d.x + "\t" + d.y);
- this.__origin__ = [d.x, d.y];
- })
- .on("drag", function(d) {
- d.x = Math.min(w, Math.max(0, this.__origin__[0] += d3.event.dx));
- d.y = Math.min(h, Math.max(0, this.__origin__[1] += d3.event.dy));
- bezier = {};
- update();
- vis.selectAll("circle.control")
- .attr("cx", x)
- .attr("cy", y);
- })
- .on("dragend", function() {
- delete this.__origin__;
- }));
- */
-vis.append("text")
-        .attr("class", "t")
-        .attr("x", w / 2)
-        .attr("y", h)
-        .attr("text-anchor", "middle");
-/*
- vis.selectAll("text.controltext")
- .data(points)
- .enter().append("text")
- .attr("class", "controltext")
- .attr("dx", "10px")
- .attr("dy", ".4em")
- .text(function(d, i) {
- return "P" + i
- });
- */
-var last = 0;
+            if (j === 0 || j === points.length - 1)
+            {
+//                pt.y += i * weight;
+//                pt.x=pt.x;
+            }
+//            else if (j < points.length / 2)
+//            {
+////                pt.y -= i * weight;
+////                pt.x -= i * weight;
+//
+//            }
+            else {
+                pt.x += getRandom();
+                pt.y += getRandom();
+                if (pt.y > h)
+                    pt.y = h-10;
+//                pt.y -= i * weight;
+//                pt.x += i * weight;
+            }
+            pts.push(pt);
+        }
+//        console.log(pts);
+        pointsList.push(pts);
+        chart = brezier(pts, i);
+        beziers.push([]);
+        charts.push(chart);
+
+    }
+    console.log(charts);
+    vis = d3.select("#vis").selectAll("svg")
+            .data([points.length]).enter()
+            .append("svg")
+            .attr("width", w + 2 * padding)
+            .attr("height", h + 2 * padding)
+            .append("g")
+            .attr("transform", "translate(" + padding + "," + padding + ")");
+    vis.append("text")
+            .attr("class", "t")
+            .attr("x", w / 2)
+            .attr("y", h)
+            .attr("text-anchor", "middle");
+
+
+}
+
 d3.timer(function(elapsed) {
     t = (t + (elapsed - last) / 5000) % 1;
-//    t=1
+//    t = 1;
     last = elapsed;
-    update();
+    for (var i in charts)
+    {
+        chart = charts[i];
+        chart.update();
+    }
+//    update();
 });
 
-function update() {
-    var count = 0;
-    var max = 0;
-    var interpolation = vis.selectAll("g")
-            .data(function(d) {
-//                console.log(d);
-                var levels = getLevels(d, t);
-//        console.log(levels);
-                for (var i in levels)
-                {
-                    count += levels[i].length;
-                    max = (levels[i].length > max) ? levels[i].length : max;
-                }
-                return levels;
-            });
-    interpolation.enter().append("g")
-            .style("fill", colour)
-            .style("stroke", colour);
-//    console.log(max);
-    var done_count = 0;
-    var circle = interpolation.selectAll("circle")
-            .data(Object);
-    circle.enter().append("circle")
-            .attr("class", function(d, i) {
+
+
+
+//d3.chart = d3.chart || {};
+brezier = function(data, index) {
+
+    var self = {};
+    var pts = data;
+//    console.log(pts);
+    self.update = function() {
+//        console.log("updating "+index);
+        var count = 0;
+        var max = 0;
+//        var vis = d3.select("#vis").select("svg").selectAll("g .g-"+index);
+//        console.log(pts);
+        var interpolation = vis.selectAll("#g-" + index)
+                .data(function(d) {
+                    var levels = getLevels(d, t, pts);
+//                    return [levels[0], levels[levels.length - 1]];
+                    return [levels[levels.length - 1]];
+                });
+        interpolation.enter().append("g")
+                .attr("id", function(d, i) {
+                    return "g-" + index;
+                })
+                .style("fill", colour)
+                .style("stroke", colour);
+        var done_count = 0;
+        var circle = interpolation.selectAll(".circle-" + index)
+                .data(Object);
+        circle.enter()
+                .append("circle")
+                .attr("class", function(d, i) {
 //                console.log(i + "\t" + done_count);
-                done_count++;
-                return (done_count === count) ? "point" : "guide";
-            })
-            .attr("r", 4);
-    circle
-            .attr("cx", x)
-            .attr("cy", y)
-            ;
+                    done_count++;
+//                    console.log(d);
+                    return "circle-" + index + " " + " circle-" + index + "-" + i + " " + ((i === 1) ? "point" : "guide");
+                })
+                .attr("r", 4);
+        circle
+                .attr("cx", x)
+                .attr("cy", y)
+                ;
 
-    var path = interpolation.selectAll("path")
-            .data(function(d) {
-//                console.log(d);
-//        if(d.length===max)
-                return [d];
-            });
+        var path = interpolation.selectAll("path .path-" + index)
+                .data(function(d) {
+                    return [d];
+                });
+        /*
+         path.enter().append("path")
+         .attr("class", function(d, i) {
+         //                console.log(d.length);
+         if (d.length === max)
+         return "line guide-line path-" + index;
+         else
+         return "line path-" + index;
+         })
+         .attr("d", function(d, i) {
+         if (d.length === max)
+         return line(d);
+         });
+         path.attr("d", function(d, i) {
+         if (d.length === max)
+         return line(d);
+         });
+         */
+        var curve = vis.selectAll(".curve-" + index)
+                .data(function(d) {
+                    return getCurve(d, index);
+                });
+        curve.enter().append("path")
+                .attr("class", "curve curve-" + index);
+        curve.attr("d", line);
+    };
 
-    path.enter().append("path")
-            .attr("class", function(d, i) {
-//                console.log(d.length);
-                if (d.length === max)
-                    return "line guide-line";
-                else
-                    return "line";
-            })
-            .attr("d", function(d, i) {
-                if (d.length === max)
-                    return line(d);
-            });
-    path.attr("d", function(d, i) {
-                if (d.length === max)
-                    return line(d);
-            });
-
-    var curve = vis.selectAll("path.curve")
-            .data(getCurve);
-    curve.enter().append("path")
-            .attr("class", "curve");
-    curve.attr("d", line);
-
-    vis.selectAll("text.controltext")
-            .attr("x", x)
-            .attr("y", y);
-    vis.selectAll("text.t")
-            .text("t=" + t.toFixed(2));
-}
+    return self;
+};
 
 function interpolate(d, p) {
     if (arguments.length < 2)
@@ -159,28 +183,29 @@ function interpolate(d, p) {
     }
     return r;
 }
+//var print_once = true;
 
-function getLevels(d, t_) {
+function getLevels(d, t_, pts) {
     if (arguments.length < 2)
         t_ = t;
-//    console.log(d);
-    var x = [points];
+    var x = [pts];
     for (var i = 1; i < d; i++) {
         x.push(interpolate(x[x.length - 1], t_));
     }
-//    console.log(x);
     return x;
 }
 
-function getCurve(d) {
-    var curve = bezier[d];
+function getCurve(d, i) {
+
+    var curve = beziers[i][d];
     if (!curve) {
-        curve = bezier[d] = [];
+        curve = beziers[i][d] = [];
         for (var t_ = 0; t_ <= 1; t_ += delta) {
-            var x = getLevels(d, t_);
+            var x = getLevels(d, t_, pointsList[i]);
             curve.push(x[x.length - 1][0]);
         }
     }
+//    console.log(curve);
     return [curve.slice(0, t / delta + 1)];
 }
 
