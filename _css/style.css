@@ -7,6 +7,10 @@ and open the template in the editor.
     Created on : Apr 28, 2014, 9:44:08 PM
     Author     : Jannah
 */
+body{
+    background-color: black;
+    font-family: sans-serif;
+}
 .circle, .line{
     /*display:none;*/
 }
@@ -17,22 +21,51 @@ and open the template in the editor.
 .guide{
     /*display:none;*/
 }
-  .curve, .line {
-        fill: none;
-        stroke-width: 1px;
-      }
-      .curve {
-        stroke: red;
-        stroke-width: .5px;
-        
-      }
-      .control {
-        fill: #ccc;
-        stroke: #000;
-        stroke-width: .1px;
-        display:none;
-        
-      }
-      .t, .controltext {
-        font-size: .6em;
-      }
+.curve, .line {
+    fill: none;
+    stroke-width: 1px;
+}
+.curve {
+    /*stroke: red;*/
+    stroke-width: .5px;
+
+}
+.curve-before{
+    stroke:white;
+}
+.curve-after{
+    stroke:red;
+}
+.control {
+    fill: #ccc;
+    stroke: #000;
+    stroke-width: .1px;
+    display:none;
+
+}
+.t, .controltext {
+    font-size: .6em;
+}
+#plane-curves{
+    width: 1000px;
+    height: 600px;
+    display: block;
+}
+#plane-curves-top{
+        width: inherit;
+    height: 400px;
+}
+.phase-line{
+    /*fill:rgba(200,200,200,.7);*/
+   stroke:rgba(255,100,100,.7);
+}
+.phase-text{
+    fill: white;
+    font-size: 10px;
+}
+.counter-span{
+    color: white;
+}
+.faded{
+    opacity: .5;
+}

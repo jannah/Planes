@@ -73,7 +73,22 @@ function CSV2JSON(csv) {
 
     return str;
 }
-
+function readJSON(filename){
+    
+    var jqxhr = $.ajax({
+        dataType: "json",
+        url: filename,
+//  data: data,
+        async: false,
+        success: function(response) {
+//      console.log(data.responseText);
+            return response;
+        }
+    });
+//    console.log(jqxhr);
+//    phases = JSON.parse(jqxhr.responseText);
+    return JSON.parse(jqxhr.responseText);
+}
 function readCSV(filename)
 {
     var json;
