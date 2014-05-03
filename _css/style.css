@@ -11,6 +11,8 @@ body{
     background-color: black;
     font-family: sans-serif;
 }
+text{fill:white;
+}
 .circle, .line{
     /*display:none;*/
 }
@@ -52,12 +54,29 @@ body{
     display: block;
 }
 #plane-curves-top{
-        width: inherit;
+    width: inherit;
     height: 400px;
 }
+#count-stacked-bar{
+    width: inherit;
+    height: 100px;
+}
+#survived-bar{
+    fill: green;
+}
+#died-bar{
+    fill: red;
+}
+.bar-text{
+    fill:white;
+}
+.bar-count{fill:white;padding:0 10px 0 10px;}
+.counter-axis {fill:white;font-size:12px;}
+#year-text{font-size:20px;}
+.tick line{stroke:white;}
 .phase-line{
     /*fill:rgba(200,200,200,.7);*/
-   stroke:rgba(255,100,100,.7);
+    stroke:rgba(255,100,100,.7);
 }
 .phase-text{
     fill: white;
@@ -69,3 +88,7 @@ body{
 .faded{
     opacity: .5;
 }
+.point{
+    fill: limegreen;
+}
+

@@ -8,7 +8,8 @@ var width = 900,
         time = 0,
         first_year = 2100,
         current_year = 0,
-        delta = .02,
+        delta = .025,
+        svg_padding = 5,
         padding = 10,
         margin = {top: 20, right: 100, bottom: 30, left: 40},
 points = [], points_file = "_data/points.json",
@@ -24,13 +25,14 @@ planes = [], planes_file = "_data/clean_planes.csv",
         n = 4,
         stroke = d3.scale.category20b(),
         orders = d3.range(2, n + 2),
-        charts = [], last = 0, chartCount = 200, weight = 2, wild = 100;//    console.log(points.length);
+        charts = {}, last = 0, chartCount = 200, weight = 2, wild = 150
+countBar = {}, countBarH = 80;//    console.log(points.length);
 
 
 var ANIMATE = false;
 function initAnimation() {
     loadPlaneData();
-    loadBeziers("#plane-curves", planes);
+    loadBeziers("#plane-curves");
 //    startTimer();
 }
 function loadPlaneData()
@@ -38,8 +40,13 @@ function loadPlaneData()
     points = readJSON(points_file);
     phases = readJSON(phases_file);
     planes = readCSV(planes_file);
-    console.log(phases);
+//    console.log(phases);
 //    console.log()
+    for (var i = 0, j = planes.length; i < j; i++)
+    {
+        idMap[planes[i].id] = i;
+    }
+//    console.log(idMap);
     var cum = 0;
     for (var i = 0, j = phases.length; i < j; i++)
     {
@@ -47,7 +54,7 @@ function loadPlaneData()
         phases[i]["cum_size"] = cum;
         phaseMap[phases[i].code] = i;
     }
-    console.log(phaseMap);
+//    console.log(phaseMap);
     for (var k = 0, l = planes.length; k < l; k++)
     {
         for (var i = 0, j = num_headers.length; i < j; i++)
@@ -58,7 +65,7 @@ function loadPlaneData()
         if (!phase)
         {
 //            console.log(planes[k].phase_code);
-            planes[k]["phase_location"] = 0
+            planes[k]["phase_location"] = 0;
         }
         else
             planes[k]["phase_location"] = phase.cum_size - phase.size * Math.random();
@@ -69,13 +76,11 @@ function loadPlaneData()
         stats[num_headers[i]] = doNest(planes, "All", num_headers[i]);
     }
 //    console.log(stats);
-    for (var i = 0, j = data.length; i < j; i++)
-    {
-        idMap[data[i].id] = i;
-    }
+//    console.log(keyMaps);
+
     planesByYear = doNest(planes, "year");
 
-//    console.log(phases);
+//    console.log(planesByYear);
 //    console.log(planes);
 //    console.log(phases);
 }
@@ -109,7 +114,7 @@ function doNest(data, key, measure)
                     for (var i = 0, j = leaves.length; i < j; i++)
                     {
 //                        console.log(leaves[i].id)
-                        item.list.push(leaves[i].id);
+                        item.list.push(parseInt(leaves[i].id));
                         item.indeces.push(idMap[leaves[i].id]);
                     }
                     return item;
@@ -131,8 +136,9 @@ function getRandom(i)
 {
     return Math.floor(Math.random() * 2 * i) - i;
 }
-function loadBeziers(target, data)
+function loadBeziers(target)
 {
+    var data = planes;
     initBezier(target);
     for (var i = 0, l = data.length; i < l; i++)
     {
@@ -162,15 +168,122 @@ function loadBeziers(target, data)
 //        console.log(pts);
 //        pointsList.push(pts);
         beziers.push([]);
-        chart = brezier(data[i], i, target);
-
-        charts.push(chart);
+        var chart = brezier(i, target);
+        charts[data[i].id] = chart;
 
     }
     current_year = first_year;
 //    console.log(first_year);
-//    console.log(charts);
+    console.log(charts);
 }
+function startTimer()
+{
+    var last_t = 0, duration = 4000, min_duration = 10;
+
+    t = 0;
+    current_year = stats["year"][0].values.min;
+//    $('.curve').attr("opacity", 1);
+    console.log("starting from " + current_year);
+    var active_years = [];
+    var year_count = 5;
+    for (var i = 0; i < year_count; i++)
+        active_years.push(current_year + i);
+    if (ANIMATE)
+    {
+        d3.timer(function(elapsed) {
+            t = (t + (elapsed - last) / duration) % 1;
+//            console.log(t + "\t" + elapsed);
+
+            if (t < last_t)
+            {
+                duration = (duration < min_duration) ? min_duration : duration / 1.2;
+                var temp_t = t;
+                t = 1;
+                updateCharts(current_year, t, true, true);
+
+                t = temp_t;
+
+                time = Math.floor(time);
+                current_year++;
+
+                while (!keyMaps["year"][current_year] && current_year < stats["year"][0].values.max)
+                {
+                    console.log("skipping year " + current_year);
+                    time++;
+                    current_year++;
+                }
+                time += t;
+            }
+            else
+                time += t - last_t;
+            last_t = t;
+            last = elapsed;
+
+            if (current_year <= stats["year"][0].values.max)
+            {
+                $("#year-text").text( "" + current_year);
+                updateCharts(current_year, t);
+            } else
+            {
+                toggleAnimation();
+            }
+            return !ANIMATE;
+        });
+    }
+
+}
+
+function toggleAnimation()
+{
+    ANIMATE = !ANIMATE;
+    if (ANIMATE)
+    {
+        startAnimation();
+        $("#animate-button").val("stop");
+    }
+    else
+    {
+        stopAnimation();
+        $("#animate-button").val("start");
+    }
+}
+function stopAnimation() {
+    ANIMATE = false;
+}
+function startAnimation() {
+    ANIMATE = true;
+    startTimer();
+}
+function updateCharts(year, comp, fade, updateCounter)
+{
+    var list = planesByYear[keyMaps["year"][year]].values.list;
+    for (var i in list)
+    {
+        var chart = charts[list[i]];
+        chart.update(comp);
+        if (updateCounter)
+        {
+            var id = idMap[list[i]];
+            var data = planes[id];
+//            console.log(data);
+            countBar.update(data.total_occupants - data.total_fatalities, data.total_fatalities);
+
+        }
+
+    }
+    if (fade)
+    {
+        d3.selectAll(".object-year-" + year)
+//                .transition()
+//                    .duration(1500)
+//                    .style("opacity", 0.3);;
+
+
+    }
+//        
+
+}
+
 function initBezier(target)
 {
     var svgw = parseInt($(target).css("width")),
@@ -200,11 +313,17 @@ function initBezier(target)
             .attr("width", svgw + 2 * padding)
             .attr("height", svgh + 2 * padding)
             .append("g")
-            .attr("transform", "translate(" + padding + "," + padding + ")")
-            .attr("id", target.split("#")[1] + "-top");
+            .attr("transform", "translate(" + (padding) + "," + (padding) + ")")
+            .attr("id", target.split("#")[1] + "-top")
+            .append("g").attr("id", "breziers-group")
+            .attr("transform", "translate(" + 0 + "," + countBarH + ")");
+    countBar = stackedBar(target.split("#")[1] + "-top", "count-stacked-bar", w, countBarH);
+
+    ;
 
 
-    console.log(h + " " + w);
+
+//    console.log(h + " " + w);
     vis.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + h + ")")
@@ -251,6 +370,11 @@ function initBezier(target)
                 return w * d.size;
             })
             .attr("text-anchor", "middle");
+
+vis.append("g").attr("class", "g-year")
+        .append("text")
+        .attr({"id": "year-text", "text-anchor":"middle", "y":h-20,"x":w/2});
+
     vis.append("g").attr("class", "g-curves");
 
 //            .attr()
@@ -259,219 +383,189 @@ function initBezier(target)
 
 
 }
-function startTimer()
+function drawBrezier(target, index, completed)
 {
-    var last_t = 0, duration = 200;
-    t = 0;
-    current_year = stats["year"][0].values.min;
-//    $('.curve').attr("opacity", 1);
-    console.log("starting from " + current_year);
+    var data = planes[index],
+            pts = data.points,
+            vis = d3.selectAll(target).selectAll("svg").select(".g-curves"),
+            interpolation = vis.selectAll(".g-" + index)
+            .data(function() {
+                var levels = getLevels(pts.length, completed, pts);
+                return [levels[levels.length - 1]];
+            });
+//    console.log(pts);
+    interpolation.enter().append("g")
+            .classed("g-" + index, true)
+            .attr("data-x", function(d) {
+                return d.x;
+            });
+    var circle = interpolation.selectAll(".circle-" + index)
+            .data(Object)
+            .enter()
+            .append("circle")
+            .classed("circle-" + index, true)
+            .classed("point", true)
+            .classed("circle-year-" + data.year, true)
+            .classed("object-year-" + data.year, true)
+            .attr("r", function(d) {
+                var key = "total_occupants",
+                        scale = doScale(data[key], key);
+//                console.log(d.x);
+                return 20 * scale + 1;
+            })
+            .attr("cx", x)
+            .attr("cy", y);
+    var curve1 = vis.selectAll(".g-" + index).selectAll(".curve-before-" + index)
+            .data(function(d) {
+                var c = getCurve(pts.length, index, pts, 0, completed);
+//                    console.log(c);
+                return c;
+//                    return getCurve(d, index, pts);
+            })
+            .enter().append("path")
+            .classed("curve-before-" + index, true)
+            .classed("curve", true)
+            .classed("curve-before", true)
+            .classed("curve-year-" + data.year, true)
+            .classed("object-year-" + data.year, true)
+            .attr("d", line)
 
-    if (ANIMATE)
-    {
-        d3.timer(function(elapsed) {
-            t = (t + (elapsed - last) / duration) % 1;
-//            console.log(t + "\t" + elapsed);
 
-            if (t < last_t)
-            {
-                var temp_t = t;
-                t = 1;
-                updateCharts(current_year, t, true);
-
-                t = temp_t;
-
-                time = Math.floor(time);
-                current_year++;
-
-                while (!keyMaps["year"][current_year] && current_year < stats["year"][0].values.max)
-                {
-                    console.log("skipping year " + current_year);
-                    time++;
-                    current_year++;
-                }
-                time += t;
-            }
-            else
-                time += t - last_t;
-            last_t = t;
-//            console.log(t + "\t" + time + "\t" + elapsed);
-            last = elapsed;
-
-
-
-            if (current_year > stats["year"][0].values.max)
-                toggleAnimation();
-            else
-            {
-                $("#year-label").text("" + current_year);
-                updateCharts(current_year, t);
-            }
-            return !ANIMATE;
-        });
-    }
-
+    var curve2 = vis.selectAll(".g-" + index).selectAll(".curve-after-" + index)
+            .data(function(d) {
+                var c = getCurve(pts.length, index, pts, 0, completed);
+//                    console.log(c);
+                return c;
+//                    return getCurve(d, index, pts);
+            })
+            .enter().append("path")
+            .classed("curve-after-" + index, true)
+            .classed("curve", true)
+            .classed("curve-after", true)
+            .classed("curve-year-" + data.year, true)
+            .classed("object-year-" + data.year, true)
+            .attr("d", line);
 }
-
-function toggleAnimation()
+function updateBrezier(target, index, completed)
 {
-    ANIMATE = !ANIMATE;
-    if (ANIMATE)
-    {
-        startAnimation();
-        $("#animate-button").val("stop");
-    }
-    else
-    {
-        stopAnimation();
-        $("#animate-button").val("start");
-    }
-}
-function stopAnimation() {
-    ANIMATE = false;
-}
-function startAnimation() {
-    ANIMATE = true;
-    startTimer();
-}
-function updateCharts(year, comp, fade)
-{
-//    console.log(year);
-    var list = planesByYear[keyMaps["year"][year]].values.indeces;
-    for (var i in list)
-    {
-        var chart = charts[list[i]];
-//        console.log(first_year + "\t" + current_year + " " + chart.data.year);
-        if (chart.data.year === year)
-        {
-//            console.log("updating " + chart.data.id+" "+comp);
-            chart.update(comp);
-
-//            $(".object-year-" + year).addClass("faded");
-        }
-        if (fade)
-            d3.selectAll(".object-year-" + year)
-                    .transition()
-                    .duration(1500)
-//                    .attr("class", function() {
-//                        return $(this).attr("class") + " faded";
-//                    })
-                    .style("opacity", 0.3);
-    }
+//    console.log("drawing " + index);
+    var data = planes[index], pts = data.points,
+            vis = d3.selectAll(target).selectAll("svg").select(".g-curves"),
+            interpolation = vis.selectAll(".g-" + index);
+    var start1 = 0,
+            end1 = (completed <= data.phase_location) ? completed : data.phase_location,
+            start2 = (completed <= data.phase_location) ? 0 : data.phase_location,
+            end2 = (completed <= data.phase_location) ? 0 : completed;
+//    console.log(start1 + " " + end1 + " " + start2 + " " + end2);
+    var levels = getLevels(pts.length, completed, pts),
+            level = levels[levels.length - 1][0],
+            curve_pts1 = getCurve(pts.length, index, pts, start1, end1),
+            curve_pts2 = getCurve(pts.length, index, pts, start2, end2);
+    interpolation.selectAll(".circle-" + index).attr("cx", level.x).attr("cy", level.y);
+    vis.selectAll(".g-" + index).selectAll(".curve-before-" + index).attr("d", function() {
+        return line(curve_pts1[0]);
+    });
+    vis.selectAll(".g-" + index).selectAll(".curve-after-" + index).attr("d", function() {
+        return line(curve_pts2[0]);
+    });
 
 }
 //d3.chart = d3.chart || {};
-brezier = function(data, index, target) {
+brezier = function(index, target) {
+//    console.log("init brez " + index);
+    var self = {}, ready = false;
+//            pts = data.points,
+//            vis = d3.selectAll(target).selectAll("svg").select(".g-curves"),
+//            completed = 0.0, circle, curve1, curve2;
 
-    var self = {}, ready = false,
-            pts = data.points,
-            vis = d3.selectAll(target).selectAll("svg").select(".g-curves"),
-            completed = 0.0, circle, curve1, curve2;
 
-    self.data = data;
-    self.completed = function() {
-        return completed;
-    };
     self.update = function(comp) {
-
+//        console.log("updating " + index);
         if (!ready)
-        {
-            self.draw(0);
-        }
-        completed = comp;
-
-        var start1 = 0,
-                end1 = (completed <= data.phase_location) ? completed : data.phase_location,
-                start2 = (completed <= data.phase_location) ? 0 : data.phase_location,
-                end2 = (completed <= data.phase_location) ? 0 : completed;
-
-        var levels = getLevels(pts.length, completed, pts),
-                level = levels[levels.length - 1][0],
-                curve_pts1 = getCurve(pts.length, index, pts, start1, end1),
-                curve_pts2 = getCurve(pts.length, index, pts, start2, end2);
-        circle.attr("cx", level.x).attr("cy", level.y);
-        curve1.attr("d", function() {
-            return line(curve_pts1[0]);
-        });
-        curve2.attr("d", function() {
-            return line(curve_pts2[0]);
-        });
-
-
-    };
-    self.draw = function(comp) {
+            drawBrezier(target, index, 0);
         ready = true;
-        completed = comp;
-//        console.log(completed);
-
-        var interpolation = vis.selectAll(".g-" + index)
-                .data(function() {
-                    var levels = getLevels(pts.length, completed, pts);
-                    return [levels[levels.length - 1]];
-                });
-//        console.log(interpolation);
-        interpolation.enter().append("g")
-//                .attr("id", "g-" + index)
-                .classed("g-" + index, true)
-//                .style("fill", colour)
-//                .style("stroke", colour)
-                .attr("data-x", function(d) {
-//                    console.log(d);
-                    return d.x;
-                });
-//        var done_count = 0;
-        circle = interpolation.selectAll(".circle-" + index)
-                .data(Object)
-                .enter()
-                .append("circle")
-//                .attr("id", "circle-" + index)
-                .classed("circle-" + index, true)
-                .classed("point", true)
-                .classed("circle-year-" + data.year, true)
-                .classed("object-year-" + data.year, true)
-                .attr("r", function(d) {
-                    var key = "total_occupants",
-                            scale = doScale(data[key], key);
-//                    console.log(d.x);
-                    return 20 * scale + 1;
-                })
-                .attr("cx", x)
-                .attr("cy", y);
-        curve1 = vis.selectAll(".g-" + index).selectAll(".curve-before-" + index)
-                .data(function(d) {
-                    var c = getCurve(pts.length, index, pts, 0, completed);
-//                    console.log(c);
-                    return c;
-//                    return getCurve(d, index, pts);
-                })
-                .enter().append("path")
-                .classed("curve-before" + index, true)
-                .classed("curve", true)
-                .classed("curve-before", true)
-                .classed("curve-year-" + data.year, true)
-                .classed("object-year-" + data.year, true)
-                .attr("d", line)
+        updateBrezier(target, index, comp);
 
 
-        curve2 = vis.selectAll(".g-" + index).selectAll(".curve-after-" + index)
-                .data(function(d) {
-                    var c = getCurve(pts.length, index, pts, 0, completed);
-//                    console.log(c);
-                    return c;
-//                    return getCurve(d, index, pts);
-                })
-                .enter().append("path")
-                .classed("curve-after-" + index, true)
-                .classed("curve", true)
-                .classed("curve-after", true)
-                .classed("curve-year-" + data.year, true)
-                .classed("object-year-" + data.year, true)
-                .attr("d", line);
     };
-//    self.draw(0);
-//    self.update(1);
     return self;
 };
+
+stackedBar = function(target_g, id, w, h)
+{
+    var self = {}, survived = 0, died = 0, total = 0,
+            vis = d3.selectAll("#" + target_g), bars,
+            died_bar, survived_bar, survived_text, died_text,
+            survived_count, died_count;
+//    var h, w;
+    self.draw = function()
+    {
+        console.log("drawing " + id);
+
+
+        vis.append("g").attr("id", id).
+                classed("stacked-bar", true)
+                .attr("transform", "translate(" + 0 + "," + 0 + ")");
+        console.log(id);
+//        var w2 = $("#" + id).css("width");
+//        w = parseInt($("#" + id).css("width"));
+//        h = parseInt($("#" + id).css("height"));
+//        console.log(w2 + "\t" + h);
+        bars = vis.selectAll("#" + id);
+
+        survived_bar = bars.append("rect").attr("id", "survived-bar")
+                .attr({"x": w / 2, "y": h / 2, "width": w / 2, "height": h / 2});
+        survived_text = bars.append("text").attr("id", "survivied-text")
+                .text("Survived").classed("bar-text", true)
+                .attr({"x": w, "y": h / 2 - svg_padding, "text-anchor": "end"});
+        survived_count = bars.append("text").attr("id", "survived-count")
+                .text("0").classed("bar-count", true)
+                .attr({"x": w / 2 + svg_padding, "y": h - svg_padding, "height": h / 2 - 2 * svg_padding, "text-anchor": "start"});
+
+        died_bar = bars.append("rect").attr("id", "died-bar")
+                .attr({"x": 0, "y": h / 2, "width": w / 2, "height": h / 2});
+        died_text = bars.append("text").attr("id", "died-text")
+                .text("Died").classed("bar-text", true)
+                .attr({"x": 0, "y": h / 2 - svg_padding, "text-anchor": "start"});
+        died_count = bars.append("text").attr("id", "died-count")
+                .text("0").classed("bar-count", true)
+                .attr({"x": w / 2 - svg_padding, "y": h - svg_padding, "height": h / 2 - 2 * svg_padding, "text-anchor": "end"});
+        var axisScale = d3.scale.linear()
+                .domain([0, 100])
+                .range([0, w]);
+        var xAxis = d3.svg.axis()
+                .scale(axisScale).orient("top")
+//                .ticks(5)
+                .tickValues([25, 50, 75])
+                .tickSubdivide(20)
+                .tickSize(8, 8,1).tickFormat(function(d) {
+            return d + "%";
+        });
+        bars.append("g").attr("class", "counter-axis")
+                .call(xAxis).attr("transform", "translate(" + 0 + "," + (h / 2) + ")");
+
+    }
+    self.update = function(d1, d2) {
+        survived += d1;
+        died += d2;
+        total = survived + died;
+//        console.log(survived + "\t" + died);
+        var sw = survived / total * w,
+                dw = died / total * w;
+        if (total > 0)
+        {
+            survived_count.transition().duration(100).text("" + survived).attr({"x": dw + svg_padding});
+            died_count.transition().duration(100).text("" + died).attr({"x": dw - svg_padding});
+            died_bar.transition().duration(100).attr({"width": dw});
+            survived_bar.transition().duration(100).attr({"width": sw, "x": dw});
+
+        }
+
+    }
+
+    self.draw();
+    return self;
+}
 
 function interpolate(d, p) {
     if (arguments.length < 2)
@@ -483,7 +577,6 @@ function interpolate(d, p) {
     }
     return r;
 }
-//var print_once = true;
 
 function getLevels(d, t_, pts) {
     if (arguments.length < 2)
