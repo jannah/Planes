@@ -3,7 +3,7 @@ $(document).ready(function() {
 });
 
 var width = 900, height = 500, bh = 0, bw = 0,
-        t = .5, time = 0, duration = 4000, min_duration = 10,
+        t = .5, time = 0, duration = 4000, max_duration = 4000, min_duration = 10,
         first_year = 2100,
         current_year = 0, last_year,
         delta = .025,
@@ -156,14 +156,16 @@ function getRandom(i)
 
 function startTimer()
 {
-    var last_t = 0;
-    duration = 4000;
+    var last_t = 0, skip_count;
+    duration = max_duration;
     t = 0;
     console.log(stats["year"]);
     if (decade_mode)
     {
+//        duration = 1000;
+        skip_count = 1;
         current_year = active_decade;
-        while (typeof (planesByYear[keyMaps["year"][current_year]]) == 'undefined')
+        while (typeof (planesByYear[keyMaps["year"][current_year]]) === 'undefined')
         {
             console.log('skipping ' + current_year);
             current_year++;
@@ -183,23 +185,42 @@ function startTimer()
 //        active_years.push(current_year + i);
     if (ANIMATE)
     {
-        d3.timer.flush();
+//        d3.timer.flush();
+
         d3.timer(function(elapsed) {
             t = (t + (elapsed - last) / duration) % 1;
             if (t < last_t)
             {
+
                 duration = (duration < min_duration) ? min_duration : duration / 1.2;
                 var temp_t = t;
                 t = 1;
-                updateCharts(current_year, t, true, true);
-                t = temp_t;
-                time = Math.floor(time);
-                current_year++;
-                while (!keyMaps["year"][current_year] && current_year < stats["year"][0].values.year.max)
+                if (skip_count > 0)
                 {
+                    skip_count--;
+                    t = temp_t;
+                    time = Math.floor(time);
+                    duration = max_duration;
+                }
+                else {
+                    updateCharts(current_year, t, true, true);
+                    t = temp_t;
+                    time = Math.floor(time);
+                    if (current_year < last_year)
+                    {
+                        current_year++;
+                        while (!keyMaps["year"][current_year] && current_year < stats["year"][0].values.year.max)
+                        {
 //                    console.log("skipping year " + current_year);
-                    time++;
-                    current_year++;
+                            time++;
+                            current_year++;
+                        }
+                    }
+                    else
+                    {
+                         stopAnimation();
+                         
+                    }
                 }
                 time += t;
             }
@@ -208,7 +229,11 @@ function startTimer()
             last_t = t;
             last = elapsed;
 
-            if (current_year <= last_year)
+            if (skip_count > 0)
+            {
+
+            }
+            else if (current_year <= last_year)
             {
                 $("#year-text").text("" + current_year);
                 updateCharts(current_year, t);
@@ -217,7 +242,7 @@ function startTimer()
                 toggleAnimation();
             }
             return !ANIMATE;
-        });
+        }, 100, Date.now());
     }
 }
 function toggleAnimation()
@@ -226,20 +251,22 @@ function toggleAnimation()
     if (ANIMATE)
     {
         startAnimation();
-        $("#animate-button").val("stop");
+
     }
     else
     {
         stopAnimation();
-        $("#animate-button").val("start");
+
     }
 }
 function stopAnimation() {
     ANIMATE = false;
-    d3.timer.flush();
+    $("#animate-button").val("start");
+//    d3.timer.flush();
 }
 function startAnimation() {
     ANIMATE = true;
+    $("#animate-button").val("stop");
     startTimer();
 }
 
@@ -261,7 +288,7 @@ function loadDecades()
                 lw = tw / j - 2;
         if (perc_f + perc_s === 0)
             perc_f = perc_s = 0.5;
-        decadeMap[decade] = i
+        decadeMap[decade] = i;
 //        console.log(decade + "\t" + lw + "\t" + tw + "\t" + perc_f + "\t" + perc_s);
 
         var option_item = '<li id="decade-select-' + decade
@@ -271,8 +298,8 @@ function loadDecades()
                 + '<tr><td colspan="2" class="decade-span">' + decade + 's</td></tr>'
                 + '<tr><td class="died-span" style="width:' + (perc_f * 100) + '%"></td>'
                 + '<td class="survived-span" style="width:' + (perc_s * 100) + '%"/></td></tr></table>'
-        '</li>';
-        if (decade != "NaN")
+                + '</li>';
+        if (decade !== "NaN")
             decselect.append(option_item);
     }
     $('#decades-select li').on("click", function(d) {
@@ -321,7 +348,7 @@ function changeDecade(decade)
 //    console.log(data);
 
     loadCharts("#plane-curves", data);
-    toggleAnimation();
+    startAnimation();
 
 }
 function loadCharts(target, data)
