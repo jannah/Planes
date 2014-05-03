@@ -2,7 +2,7 @@ $(document).ready(function() {
     initAnimation();
 });
 
-var width = 900, height = 500, bh = 0, bw = 0,
+var width = 900, height = 500, bh = 0, bw = 0,default_opacity = .5,
         t = .5, time = 0, duration = 4000, max_duration = 4000, min_duration = 10,
         first_year = 2100,
         current_year = 0, last_year,
@@ -62,6 +62,16 @@ function loadPlaneData()
         for (var i = 0, j = num_headers.length; i < j; i++)
         {
             planes[k][num_headers[i]] = parseInt(planes[k][num_headers[i]]);
+            var phase = phases[phaseMap[planes[k].phase_code]];
+            if (!phase)
+            {
+//            console.log(planes[k].phase_code);
+                planes[k]["phase_location"] = 0;
+            }
+            else
+            {
+                planes[k]["phase_location"] = phase.cum_size - phase.size * Math.random();
+            }
         }
         var phase = phases[phaseMap[planes[k].phase_code]];
         if (!phase)
@@ -70,7 +80,9 @@ function loadPlaneData()
             planes[k]["phase_location"] = 0;
         }
         else
+        {
             planes[k]["phase_location"] = phase.cum_size - phase.size * Math.random();
+        }
     }
     for (var i = 0, j = num_headers.length; i < j; i++)
     {
@@ -169,7 +181,6 @@ function startTimer()
         current_year = stats["year"][0].values.year.min;
         last_year = stats["year"][0].values.year.max;
     }
-
     console.log("starting from " + current_year);
 //    var active_years = [];
 //    var year_count = 5;
@@ -178,12 +189,10 @@ function startTimer()
     if (ANIMATE)
     {
 //        d3.timer.flush();
-
         d3.timer(function(elapsed) {
             t = (t + (elapsed - last) / duration) % 1;
             if (t < last_t)
             {
-
                 duration = (duration < min_duration) ? min_duration : duration / 1.2;
                 var temp_t = t;
                 t = 1;
@@ -211,7 +220,6 @@ function startTimer()
                     else
                     {
                         stopAnimation();
-
                     }
                 }
                 time += t;
@@ -223,7 +231,6 @@ function startTimer()
 
             if (skip_count > 0)
             {
-
             }
             else if (current_year <= last_year)
             {
@@ -266,7 +273,7 @@ function loadDecades()
 {
     var decdiv = $("#decades"), decselect = $("#decades-select");
     planesByDecade = doNest(planes, "decade", ["total_fatalities", "total_occupants"], true, true);
-    console.log(planesByDecade);
+//    console.log(planesByDecade);
     for (var i = 0, j = planesByDecade.length; i < j; i++)
     {
 
@@ -305,17 +312,17 @@ function loadDecades()
 //    console.log(self.attr('data-decade'));
     }).on("mouseenter", function(d) {
         var decade = $(this).attr('data-decade');
-        console.log('highlighting ' + decade)
+        console.log('highlighting ' + decade);
         if (!$(this).hasClass('selected-decade'))
             $(this).addClass('highlighted-decade');
 
 
-        d3.selectAll(".g-curve-decade").style('opacity', .2);
+        d3.selectAll(".g-curve-decade").style('opacity', .1);
         d3.selectAll("#g-curve-" + decade).style('opacity', 1);
 
     }).on("mouseleave", function(d) {
         $(this).removeClass('highlighted-decade');
-        d3.selectAll('.g-curve-decade').style('opacity', 1);
+        d3.selectAll('.g-curve-decade').style('opacity', default_opacity);
     });
 
 }
@@ -342,48 +349,6 @@ function changeDecade(decade)
     loadCharts("#plane-curves", data);
     startAnimation();
 
-}
-function loadCharts(target, data)
-{
-//    charts = {};
-//    beziers = {};
-    preparePoints(target, data);
-    first_year = stats["year"][0].values.year.min;
-    console.log(beziers);
-    current_year = first_year;
-}
-function preparePoints(target, data)
-{
-    for (var i = 0, l = data.length; i < l; i++)
-    {
-        var pts = [];
-        for (var j = 0, k = points.length; j < k; j++)
-        {
-            var pt = {x: points[j].x, y: points[j].y};
-
-            if (j === 0 || j === points.length - 1)
-            {
-//                pt.y += i * weight;
-//                pt.x=pt.x;
-            }
-            else
-            {
-                pt.x += getRandom(wild);
-                pt.y += getRandom(wild);
-                if (pt.y > bh)
-                    pt.y = bh - 10;
-            }
-            pts.push(pt);
-        }
-
-        data[i].points = pts;
-        data[i].time = 0;
-
-        beziers[data[i].id] = [];
-        var chart = brezier(data[i].id, target);
-        charts[data[i].id] = chart;
-
-    }
 }
 function initCharts(target)
 {
@@ -432,7 +397,7 @@ function initCharts(target)
             new_phases.push(phases[i]);
         }
     }
-    console.log(new_phases);
+//    console.log(new_phases);
     var phase_lines = vis.append("g").attr("class", "g-phases").selectAll(".phase-line")
             .data(new_phases).enter();
     phase_lines.append("line")
@@ -471,6 +436,114 @@ function initCharts(target)
     drawDecadeGroups();
 
 }
+function loadCharts(target, data)
+{
+//    charts = {};
+//    beziers = {};
+//    preparePoints(target, data);
+    prepareStraightPoints(target, data);
+    first_year = stats["year"][0].values.year.min;
+//    console.log(beziers);
+    current_year = first_year;
+}
+function prepareStraightPoints(target, data)
+{
+    var max = d3.max(data, function(d) {
+        return d.total_occupants;
+    }), min = d3.min(data, function(d) {
+        return d.total_occupants;
+    })
+            ;
+    console.log(min + "\t" + max);
+    for (var i = 0, l = data.length; i < l; i++)
+    {
+        var phase = phases[phaseMap[data[i].phase_code]];
+        try {
+
+             planes[idMap[data[i].id]].phase_location = phase.cum_size - phase.size*Math.random()/2;
+            var pts = [],
+                    pl = planes[idMap[data[i].id]].phase_location,
+                    temp1 = pl,
+                    temp2 = pl + (1 - pl) / 4,
+                    temp3 = pl + (1 - pl) / 2,
+                    temp4 = pl + (1 - pl) * 3 / 4,
+                    start = (max - min === 0) ? .5 : 1 - (data[i].total_occupants - min) / (max - min),
+                    end = (max - min === 0) ? .5 : 1 - (data[i].total_occupants - data[i].total_fatalities - min) / (max - min),
+                    mid = (start + end) / 2;
+            ;
+           
+//        console.log(pl+"\t"+temp1+"\t"+temp2+"\t"+temp3+"\t"+temp4);
+//        console.log(start+"\t"+mid+"\t"+end);
+
+            for (var j = 0; j < 7; j++)
+            {
+                pts.push({x: 0, y: 0});
+            }
+            pts[0].x = 0;
+            pts[0].y = start * bh;
+            pts[1].x = pl * bw;
+            pts[1].y = start * bh;
+            pts[2].x = temp1 * bw;
+            pts[2].y = start * bh;
+            pts[3].x = temp2 * bw;
+            pts[3].y = start * bh;
+            pts[4].x = temp3 * bw;
+            pts[4].y = start * bh;
+            pts[5].x = temp4 * bw;
+            pts[5].y = start * bh;
+            pts[6].x = bw;
+            pts[6].y = end * bh;
+
+            data[i].points = pts;
+            data[i].r = 10;
+            data[i].time = 0;
+
+            beziers[data[i].id] = [];
+            var chart = brezier(data[i].id, target);
+            charts[data[i].id] = chart;
+        } catch (e)
+        {
+            console.log(data[i]);
+            console.log(phase);
+            console.log(e);
+        }
+    }
+    console.log(data)
+}
+function preparePoints(target, data)
+{
+    for (var i = 0, l = data.length; i < l; i++)
+    {
+        var pts = [];
+        for (var j = 0, k = points.length; j < k; j++)
+        {
+            var pt = {x: points[j].x, y: points[j].y};
+
+            if (j === 0 || j === points.length - 1)
+            {
+//                pt.y += i * weight;
+//                pt.x=pt.x;
+            }
+            else
+            {
+                pt.x += getRandom(wild);
+                pt.y += getRandom(wild);
+                if (pt.y > bh)
+                    pt.y = bh - 10;
+            }
+            pts.push(pt);
+        }
+
+        data[i].points = pts;
+        data[i].time = 0;
+
+        beziers[data[i].id] = [];
+        var chart = brezier(data[i].id, target);
+        charts[data[i].id] = chart;
+
+    }
+}
+
 function drawDecadeGroups()
 {
     var gc = d3.selectAll('.g-curves');
@@ -632,13 +705,13 @@ stackedBar = function(target_g, id, w, h)
 //    var h, w;
     self.draw = function()
     {
-        console.log("drawing " + id);
+//        console.log("drawing " + id);
 
 
         vis.append("g").attr("id", id).
                 classed("stacked-bar", true)
                 .attr("transform", "translate(" + 0 + "," + 0 + ")");
-        console.log(id);
+//        console.log(id);
 
         bars = vis.selectAll("#" + id);
 
