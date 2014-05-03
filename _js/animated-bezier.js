@@ -77,15 +77,7 @@ function loadPlaneData()
 
         stats[num_headers[i]] = doNest(planes, "All", [num_headers[i]], false, false);
     }
-
-//    console.log(stats);
-//    console.log(keyMaps);
-
     planesByYear = doNest(planes, "year", "year", true, true);
-
-//    console.log(planesByYear);
-//    console.log(planes);
-//    console.log(phases);
 }
 
 function doNest(data, key, measure, addList, addIndeces)
@@ -218,8 +210,8 @@ function startTimer()
                     }
                     else
                     {
-                         stopAnimation();
-                         
+                        stopAnimation();
+
                     }
                 }
                 time += t;
@@ -355,6 +347,13 @@ function loadCharts(target, data)
 {
 //    charts = {};
 //    beziers = {};
+    preparePoints(target, data);
+    first_year = stats["year"][0].values.year.min;
+    console.log(beziers);
+    current_year = first_year;
+}
+function preparePoints(target, data)
+{
     for (var i = 0, l = data.length; i < l; i++)
     {
         var pts = [];
@@ -385,11 +384,7 @@ function loadCharts(target, data)
         charts[data[i].id] = chart;
 
     }
-    first_year = stats["year"][0].values.year.min;
-    console.log(beziers);
-    current_year = first_year;
 }
-
 function initCharts(target)
 {
     var svgw = parseInt($(target).css("width")),
