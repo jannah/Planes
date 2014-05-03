@@ -3,9 +3,9 @@ $(document).ready(function() {
 });
 
 var width = 900, height = 500, bh = 0, bw = 0,
-        t = .5, time = 0,
+        t = .5, time = 0, duration = 4000, min_duration = 10,
         first_year = 2100,
-        current_year = 0,
+        current_year = 0, last_year,
         delta = .025,
         svg_padding = 5,
         padding = 10,
@@ -18,13 +18,14 @@ idMap = {}, keyMaps = {}, stats = {},
         num_headers = ["decade", "year", "month", "crew_occupants", "passengers_fatalities",
             "crew_fatalities", "total_fatalities", "total_occupants_old", "total_occupants",
             "passengers_occupants", "passengers_occupants_old"],
-        beziers = [],
+        beziers = {},
         pointsList = [],
         line = d3.svg.line().x(x).y(y),
         n = 4,
         stroke = d3.scale.category20b(),
         orders = d3.range(2, n + 2),
-        charts = {}, last = 0, chartCount = 200, weight = 2, wild = 150
+        charts = {}, last = 0, chartCount = 200, weight = 2, wild = 150,
+        decade_mode = false, active_decade = 0, decadeMap = {};
 countBar = {}, countBarH = 80;//    console.log(points.length);
 
 
@@ -32,7 +33,8 @@ var ANIMATE = false;
 function initAnimation() {
     loadPlaneData();
     loadDecades();
-    loadCharts("#plane-curves");
+    initCharts("#plane-curves");
+    loadCharts("#plane-curves", planes);
 //    startTimer();
 }
 function loadPlaneData()
@@ -154,18 +156,34 @@ function getRandom(i)
 
 function startTimer()
 {
-    var last_t = 0, duration = 4000, min_duration = 10;
-
+    var last_t = 0;
+    duration = 4000;
     t = 0;
     console.log(stats["year"]);
-    current_year = stats["year"][0].values.year.min;
+    if (decade_mode)
+    {
+        current_year = active_decade;
+        while (typeof (planesByYear[keyMaps["year"][current_year]]) == 'undefined')
+        {
+            console.log('skipping ' + current_year);
+            current_year++;
+        }
+        last_year = active_decade + 9;
+    }
+    else
+    {
+        current_year = stats["year"][0].values.year.min;
+        last_year = stats["year"][0].values.year.max;
+    }
+
     console.log("starting from " + current_year);
-    var active_years = [];
-    var year_count = 5;
-    for (var i = 0; i < year_count; i++)
-        active_years.push(current_year + i);
+//    var active_years = [];
+//    var year_count = 5;
+//    for (var i = 0; i < year_count; i++)
+//        active_years.push(current_year + i);
     if (ANIMATE)
     {
+        d3.timer.flush();
         d3.timer(function(elapsed) {
             t = (t + (elapsed - last) / duration) % 1;
             if (t < last_t)
@@ -179,7 +197,7 @@ function startTimer()
                 current_year++;
                 while (!keyMaps["year"][current_year] && current_year < stats["year"][0].values.year.max)
                 {
-                    console.log("skipping year " + current_year);
+//                    console.log("skipping year " + current_year);
                     time++;
                     current_year++;
                 }
@@ -190,7 +208,7 @@ function startTimer()
             last_t = t;
             last = elapsed;
 
-            if (current_year <= stats["year"][0].values.year.max)
+            if (current_year <= last_year)
             {
                 $("#year-text").text("" + current_year);
                 updateCharts(current_year, t);
@@ -218,6 +236,7 @@ function toggleAnimation()
 }
 function stopAnimation() {
     ANIMATE = false;
+    d3.timer.flush();
 }
 function startAnimation() {
     ANIMATE = true;
@@ -227,7 +246,7 @@ function startAnimation() {
 function loadDecades()
 {
     var decdiv = $("#decades"), decselect = $("#decades-select");
-    planesByDecade = doNest(planes, "decade", ["total_fatalities", "total_occupants"]);
+    planesByDecade = doNest(planes, "decade", ["total_fatalities", "total_occupants"], true, true);
     console.log(planesByDecade);
     for (var i = 0, j = planesByDecade.length; i < j; i++)
     {
@@ -242,8 +261,8 @@ function loadDecades()
                 lw = tw / j - 2;
         if (perc_f + perc_s === 0)
             perc_f = perc_s = 0.5;
-
-        console.log(decade + "\t" + lw + "\t" + tw + "\t" + perc_f + "\t" + perc_s);
+        decadeMap[decade] = i
+//        console.log(decade + "\t" + lw + "\t" + tw + "\t" + perc_f + "\t" + perc_s);
 
         var option_item = '<li id="decade-select-' + decade
                 + '" data-decade="' + decade + '" value="' + decade + '" '
@@ -256,32 +275,59 @@ function loadDecades()
         if (decade != "NaN")
             decselect.append(option_item);
     }
-$('#decades-select li').on("click", function(d){
-    var self = $(this);
-    self.addClass('selected-decade').removeClass('highlighted-decade')
-            .siblings("li").removeClass('selected-decade');
-    changeDecade(parseInt(self.attr('data-decade')));
-    
-    $('.object-year')
-    
+    $('#decades-select li').on("click", function(d) {
+        var self = $(this);
+        self.addClass('selected-decade').removeClass('highlighted-decade')
+                .siblings("li").removeClass('selected-decade');
+        changeDecade(parseInt(self.attr('data-decade')));
+
+//        $('.object-year')
+
 //    console.log(self.attr('data-decade'));
-}).on("mouseenter", function(d){
-    if(!$(this).hasClass('selected-decade'))
-    $(this).addClass('highlighted-decade');
-}).on("mouseleave", function(d){
-    $(this).removeClass('highlighted-decade');
-});
+    }).on("mouseenter", function(d) {
+        var decade = $(this).attr('data-decade');
+        console.log('highlighting ' + decade)
+        if (!$(this).hasClass('selected-decade'))
+            $(this).addClass('highlighted-decade');
+
+
+        d3.selectAll(".g-curve-decade").style('opacity', .2);
+        d3.selectAll("#g-curve-" + decade).style('opacity', 1);
+
+    }).on("mouseleave", function(d) {
+        $(this).removeClass('highlighted-decade');
+        d3.selectAll('.g-curve-decade').style('opacity', 1);
+    });
 
 }
 
 function changeDecade(decade)
 {
-    
+    console.log(decade);
+    stopAnimation();
+    active_decade = parseInt(decade);
+    decade_mode = true;
+    countBar.reset();
+    resetBreziers();
+
+    var data = [], list = planesByDecade[decadeMap[decade]].values.list;
+//    console.log(list);
+    for (var i = 0, j = list.length; i < j; i++)
+    {
+//        console.log(list[i]);
+        data.push(planes[list[i]]);
+
+    }
+//    console.log(data);
+
+    loadCharts("#plane-curves", data);
+    toggleAnimation();
+
 }
-function loadCharts(target)
+function loadCharts(target, data)
 {
-    var data = planes;
-    initCharts(target);
+//    charts = {};
+//    beziers = {};
     for (var i = 0, l = data.length; i < l; i++)
     {
         var pts = [];
@@ -306,14 +352,14 @@ function loadCharts(target)
 
         data[i].points = pts;
         data[i].time = 0;
-       
-        beziers.push([]);
-        var chart = brezier(i, target);
+
+        beziers[data[i].id] = [];
+        var chart = brezier(data[i].id, target);
         charts[data[i].id] = chart;
 
-    } 
+    }
     first_year = stats["year"][0].values.year.min;
-//    console.log(charts);
+    console.log(beziers);
     current_year = first_year;
 }
 
@@ -400,19 +446,23 @@ function initCharts(target)
             .attr({"id": "year-text", "text-anchor": "middle", "y": h - 20, "x": w / 2});
 
     vis.append("g").attr("class", "g-curves");
-    
-    var gc = vis.selectAll('.g-curves');
-    for(var i = 0, j=planesByDecade.length;i<j;i++)
+    drawDecadeGroups();
+
+}
+function drawDecadeGroups()
+{
+    var gc = d3.selectAll('.g-curves');
+    for (var i = 0, j = planesByDecade.length; i < j; i++)
     {
         var decade = planesByDecade[i].key;
-        console.log('adding decade '+decade)
-        gc.append("g").attr({'id':'g-curve-'+decade});
+//        console.log('adding decade ' + decade)
+        gc.append("g").attr({'id': 'g-curve-' + decade, 'class': 'g-curve-decade'});
     }
 }
 function updateCharts(year, comp, fade, updateCounter)
 {
+
     var list = planesByYear[keyMaps["year"][year]].values.list;
-    console.log(list);
     for (var i in list)
     {
         var chart = charts[list[i]];
@@ -437,7 +487,7 @@ function drawBrezier(target, index, completed)
     var data = planes[index],
             pts = data.points,
             decade = data.decade,
-            vis = d3.selectAll(target).selectAll("svg").select("#g-curve-"+decade),
+            vis = d3.selectAll(target).selectAll("svg").select("#g-curve-" + decade),
             interpolation = vis.selectAll(".g-" + index)
             .data(function() {
                 var levels = getLevels(pts.length, completed, pts);
@@ -446,6 +496,7 @@ function drawBrezier(target, index, completed)
 //    console.log(decade);
     interpolation.enter().append("g")
             .classed("g-" + index, true)
+            .classed("g-curve", true)
             .attr("data-x", function(d) {
                 return d.x;
             });
@@ -521,6 +572,15 @@ function updateBrezier(target, index, completed)
 
 }
 
+function resetBreziers() {
+//    for (var decade in decadeMap)
+//    {
+//        console.log(decade);
+//        d3.select('.g-curves').selectAll('.g-curve').remove();
+//    }
+    $('.g-curves').empty();
+    drawDecadeGroups();
+}
 brezier = function(index, target) {
 //    console.log("init brez " + index);
     var self = {}, ready = false;
@@ -557,10 +617,7 @@ stackedBar = function(target_g, id, w, h)
                 classed("stacked-bar", true)
                 .attr("transform", "translate(" + 0 + "," + 0 + ")");
         console.log(id);
-//        var w2 = $("#" + id).css("width");
-//        w = parseInt($("#" + id).css("width"));
-//        h = parseInt($("#" + id).css("height"));
-//        console.log(w2 + "\t" + h);
+
         bars = vis.selectAll("#" + id);
 
         survived_bar = bars.append("rect").attr("id", "survived-bar")
@@ -595,24 +652,38 @@ stackedBar = function(target_g, id, w, h)
                 .call(xAxis).attr("transform", "translate(" + 0 + "," + (h / 2) + ")");
 
     }
-    self.update = function(d1, d2) {
+    self.update = function(d1, d2, reset) {
         survived += d1;
         died += d2;
         total = survived + died;
+
 //        console.log(survived + "\t" + died);
-        var sw = survived / total * w,
-                dw = died / total * w;
-        if (total > 0)
+        var sw = (reset) ? w / 2 : survived / total * w,
+                dw = (reset) ? w / 2 : died / total * w;
+
+        if (total > 0 || reset)
         {
-            survived_count.transition().duration(100).text("" + survived).attr({"x": dw + svg_padding});
-            died_count.transition().duration(100).text("" + died).attr({"x": dw - svg_padding});
-            died_bar.transition().duration(100).attr({"width": dw});
-            survived_bar.transition().duration(100).attr({"width": sw, "x": dw});
+            survived_count.style('font-size', '20px').transition().duration(duration / 2)
+                    .text("" + survived).attr({"x": dw + svg_padding}).style('font-size', '15px')
+
+            died_count.style('font-size', '20px').transition().duration(duration / 2)
+                    .text("" + died).attr({"x": dw - svg_padding}).style('font-size', '15px')
+
+
+            died_bar.transition().duration(duration / 2)
+                    .attr({"width": dw});
+            survived_bar.transition().duration(duration / 2)
+                    .attr({"width": sw, "x": dw});
 
         }
 
-    }
+    };
+    self.reset = function() {
+        survived = 0;
+        died = 0;
 
+        self.update(0, 0, true);
+    };
     self.draw();
     return self;
 }
@@ -669,7 +740,7 @@ function doScale(value, key)
 {
     if (value === 0)
         return 0;
-    var min = stats[key][0].values.min, max = stats[key][0].values[key].max;
+    var min = stats[key][0].values[key].min, max = stats[key][0].values[key].max;
     return (value - min) / (max - min);
 }
 

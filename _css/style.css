@@ -71,7 +71,7 @@ text{fill:white;
 .bar-text{
     fill:white;
 }
-.bar-count{fill:white;padding:0 10px 0 10px;}
+.bar-count{fill:white;padding:0 10px 0 10px; font-size:15px;}
 .counter-axis {fill:white;font-size:12px;}
 #year-text{font-size:20px;}
 .tick line{stroke:white;}
