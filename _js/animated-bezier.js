@@ -2,10 +2,8 @@ $(document).ready(function() {
     initAnimation();
 });
 
-var width = 900,
-        height = 500, bh = 0, bw = 0,
-        t = .5,
-        time = 0,
+var width = 900, height = 500, bh = 0, bw = 0,
+        t = .5, time = 0,
         first_year = 2100,
         current_year = 0,
         delta = .025,
@@ -15,8 +13,9 @@ var width = 900,
 points = [], points_file = "_data/points.json",
         phases = [], phases_file = "_data/phases.json", phaseMap = {};
 planes = [], planes_file = "_data/clean_planes.csv",
-        planesByYear = {}, idMap = {}, keyMaps = {}, stats = {},
-        num_headers = ["year", "month", "crew_occupants", "passengers_fatalities",
+        planesByYear = {}, planesByDecade = {};
+idMap = {}, keyMaps = {}, stats = {},
+        num_headers = ["decade", "year", "month", "crew_occupants", "passengers_fatalities",
             "crew_fatalities", "total_fatalities", "total_occupants_old", "total_occupants",
             "passengers_occupants", "passengers_occupants_old"],
         beziers = [],
@@ -32,7 +31,8 @@ countBar = {}, countBarH = 80;//    console.log(points.length);
 var ANIMATE = false;
 function initAnimation() {
     loadPlaneData();
-    loadBeziers("#plane-curves");
+    loadDecades();
+    loadCharts("#plane-curves");
 //    startTimer();
 }
 function loadPlaneData()
@@ -73,24 +73,28 @@ function loadPlaneData()
     for (var i = 0, j = num_headers.length; i < j; i++)
     {
 
-        stats[num_headers[i]] = doNest(planes, "All", num_headers[i]);
+        stats[num_headers[i]] = doNest(planes, "All", [num_headers[i]], false, false);
     }
+
 //    console.log(stats);
 //    console.log(keyMaps);
 
-    planesByYear = doNest(planes, "year");
+    planesByYear = doNest(planes, "year", "year", true, true);
 
 //    console.log(planesByYear);
 //    console.log(planes);
 //    console.log(phases);
 }
 
-function doNest(data, key, measure)
+function doNest(data, key, measure, addList, addIndeces)
 {
     if (!key)
         key = "All";
     if (!measure)
-        measure = key;
+        measure = [key];
+    if (!measure instanceof Array)
+        measure = [measure];
+//    console.log(measure);
 
     var nested = d3.nest()
             .key(function(d) {
@@ -100,24 +104,35 @@ function doNest(data, key, measure)
 //                console.log(leaves);
                 if (leaves)
                 {
-                    var item = {count: 0, sum: 0, max: 0, min: 0, list: [], indeces: []};
-                    item.count = leaves.length;
-                    item.sum = d3.sum(leaves, function(d) {
-                        return d[measure];
-                    });
-                    item.max = d3.max(leaves, function(d) {
-                        return d[measure];
-                    });
-                    item.min = d3.min(leaves, function(d) {
-                        return d[measure];
-                    });
+
+                    var item2 = {list: [], indeces: [], measures: []};
+                    for (var i = 0, j = measure.length; i < j; i++)
+                    {
+                        var item = {count: 0, sum: 0, max: 0, min: 0};
+                        item.count = leaves.length;
+                        item.sum = d3.sum(leaves, function(d) {
+//                            console.log(d);
+                            return d[measure[i]];
+                        });
+                        item.max = d3.max(leaves, function(d) {
+                            return d[measure[i]];
+                        });
+                        item.min = d3.min(leaves, function(d) {
+                            return d[measure[i]];
+                        });
+                        item2[measure[i]] = item;
+                        item2.measures.push(measure[i]);
+                    }
                     for (var i = 0, j = leaves.length; i < j; i++)
                     {
 //                        console.log(leaves[i].id)
-                        item.list.push(parseInt(leaves[i].id));
-                        item.indeces.push(idMap[leaves[i].id]);
+                        if (addList)
+                            item2.list.push(parseInt(leaves[i].id));
+                        if (addIndeces)
+                            item2.indeces.push(idMap[leaves[i].id]);
                     }
-                    return item;
+                    item2["key_name"] = key;
+                    return item2;
                 }
             })
             .entries(data);
@@ -136,10 +151,137 @@ function getRandom(i)
 {
     return Math.floor(Math.random() * 2 * i) - i;
 }
-function loadBeziers(target)
+
+function startTimer()
+{
+    var last_t = 0, duration = 4000, min_duration = 10;
+
+    t = 0;
+    console.log(stats["year"]);
+    current_year = stats["year"][0].values.year.min;
+    console.log("starting from " + current_year);
+    var active_years = [];
+    var year_count = 5;
+    for (var i = 0; i < year_count; i++)
+        active_years.push(current_year + i);
+    if (ANIMATE)
+    {
+        d3.timer(function(elapsed) {
+            t = (t + (elapsed - last) / duration) % 1;
+            if (t < last_t)
+            {
+                duration = (duration < min_duration) ? min_duration : duration / 1.2;
+                var temp_t = t;
+                t = 1;
+                updateCharts(current_year, t, true, true);
+                t = temp_t;
+                time = Math.floor(time);
+                current_year++;
+                while (!keyMaps["year"][current_year] && current_year < stats["year"][0].values.year.max)
+                {
+                    console.log("skipping year " + current_year);
+                    time++;
+                    current_year++;
+                }
+                time += t;
+            }
+            else
+                time += t - last_t;
+            last_t = t;
+            last = elapsed;
+
+            if (current_year <= stats["year"][0].values.year.max)
+            {
+                $("#year-text").text("" + current_year);
+                updateCharts(current_year, t);
+            } else
+            {
+                toggleAnimation();
+            }
+            return !ANIMATE;
+        });
+    }
+}
+function toggleAnimation()
+{
+    ANIMATE = !ANIMATE;
+    if (ANIMATE)
+    {
+        startAnimation();
+        $("#animate-button").val("stop");
+    }
+    else
+    {
+        stopAnimation();
+        $("#animate-button").val("start");
+    }
+}
+function stopAnimation() {
+    ANIMATE = false;
+}
+function startAnimation() {
+    ANIMATE = true;
+    startTimer();
+}
+
+function loadDecades()
+{
+    var decdiv = $("#decades"), decselect = $("#decades-select");
+    planesByDecade = doNest(planes, "decade", ["total_fatalities", "total_occupants"]);
+    console.log(planesByDecade);
+    for (var i = 0, j = planesByDecade.length; i < j; i++)
+    {
+
+        var decade = planesByDecade[i].key,
+                occupants = planesByDecade[i].values.total_occupants.sum,
+                fatalities = planesByDecade[i].values.total_fatalities.sum,
+                survivors = occupants - fatalities,
+                perc_f = (occupants > 0) ? fatalities / occupants : 0,
+                perc_s = (occupants > 0) ? survivors / occupants : 0,
+                tw = parseInt(decselect.css("width")),
+                lw = tw / j - 2;
+        if (perc_f + perc_s === 0)
+            perc_f = perc_s = 0.5;
+
+        console.log(decade + "\t" + lw + "\t" + tw + "\t" + perc_f + "\t" + perc_s);
+
+        var option_item = '<li id="decade-select-' + decade
+                + '" data-decade="' + decade + '" value="' + decade + '" '
+                + 'style="width:' + lw + 'px">'
+                + '<table cellspacing="0" cellpadding="0">'
+                + '<tr><td colspan="2" class="decade-span">' + decade + 's</td></tr>'
+                + '<tr><td class="died-span" style="width:' + (perc_f * 100) + '%"></td>'
+                + '<td class="survived-span" style="width:' + (perc_s * 100) + '%"/></td></tr></table>'
+        '</li>';
+        if (decade != "NaN")
+            decselect.append(option_item);
+    }
+$('#decades-select li').on("click", function(d){
+    var self = $(this);
+    self.addClass('selected-decade').removeClass('highlighted-decade')
+            .siblings("li").removeClass('selected-decade');
+    changeDecade(parseInt(self.attr('data-decade')));
+    
+    $('.object-year')
+    
+//    console.log(self.attr('data-decade'));
+}).on("mouseenter", function(d){
+    if(!$(this).hasClass('selected-decade'))
+    $(this).addClass('highlighted-decade');
+}).on("mouseleave", function(d){
+    $(this).removeClass('highlighted-decade');
+});
+
+}
+
+function changeDecade(decade)
+{
+    
+}
+function loadCharts(target)
 {
     var data = planes;
-    initBezier(target);
+    initCharts(target);
     for (var i = 0, l = data.length; i < l; i++)
     {
         var pts = [];
@@ -164,135 +306,24 @@ function loadBeziers(target)
 
         data[i].points = pts;
         data[i].time = 0;
-        first_year = (data[i].year < first_year) ? data[i].year : first_year;
-//        console.log(pts);
-//        pointsList.push(pts);
+       
         beziers.push([]);
         var chart = brezier(i, target);
         charts[data[i].id] = chart;
 
-    }
+    } 
+    first_year = stats["year"][0].values.year.min;
+//    console.log(charts);
     current_year = first_year;
-//    console.log(first_year);
-    console.log(charts);
-}
-function startTimer()
-{
-    var last_t = 0, duration = 4000, min_duration = 10;
-
-    t = 0;
-    current_year = stats["year"][0].values.min;
-//    $('.curve').attr("opacity", 1);
-    console.log("starting from " + current_year);
-    var active_years = [];
-    var year_count = 5;
-    for (var i = 0; i < year_count; i++)
-        active_years.push(current_year + i);
-    if (ANIMATE)
-    {
-        d3.timer(function(elapsed) {
-            t = (t + (elapsed - last) / duration) % 1;
-//            console.log(t + "\t" + elapsed);
-
-            if (t < last_t)
-            {
-                duration = (duration < min_duration) ? min_duration : duration / 1.2;
-                var temp_t = t;
-                t = 1;
-                updateCharts(current_year, t, true, true);
-
-                t = temp_t;
-
-                time = Math.floor(time);
-                current_year++;
-
-                while (!keyMaps["year"][current_year] && current_year < stats["year"][0].values.max)
-                {
-                    console.log("skipping year " + current_year);
-                    time++;
-                    current_year++;
-                }
-                time += t;
-            }
-            else
-                time += t - last_t;
-            last_t = t;
-            last = elapsed;
-
-            if (current_year <= stats["year"][0].values.max)
-            {
-                $("#year-text").text( "" + current_year);
-                updateCharts(current_year, t);
-            } else
-            {
-                toggleAnimation();
-            }
-            return !ANIMATE;
-        });
-    }
-
 }
 
-function toggleAnimation()
-{
-    ANIMATE = !ANIMATE;
-    if (ANIMATE)
-    {
-        startAnimation();
-        $("#animate-button").val("stop");
-    }
-    else
-    {
-        stopAnimation();
-        $("#animate-button").val("start");
-    }
-}
-function stopAnimation() {
-    ANIMATE = false;
-}
-function startAnimation() {
-    ANIMATE = true;
-    startTimer();
-}
-function updateCharts(year, comp, fade, updateCounter)
-{
-    var list = planesByYear[keyMaps["year"][year]].values.list;
-    for (var i in list)
-    {
-        var chart = charts[list[i]];
-        chart.update(comp);
-        if (updateCounter)
-        {
-            var id = idMap[list[i]];
-            var data = planes[id];
-//            console.log(data);
-            countBar.update(data.total_occupants - data.total_fatalities, data.total_fatalities);
-
-        }
-
-    }
-    if (fade)
-    {
-        d3.selectAll(".object-year-" + year)
-//                .transition()
-//                    .duration(1500)
-//                    .style("opacity", 0.3);;
-
-
-    }
-//        
-
-}
-
-function initBezier(target)
+function initCharts(target)
 {
     var svgw = parseInt($(target).css("width")),
             svgh = parseInt($(target).css("height"));
     bw = svgw;
     bh = svgh / 2;
     var w = bw, h = bh;
-
-
     for (var i = 0, j = points.length; i < j; i++)
     {
         points[i].x *= w;
@@ -319,11 +350,6 @@ function initBezier(target)
             .attr("transform", "translate(" + 0 + "," + countBarH + ")");
     countBar = stackedBar(target.split("#")[1] + "-top", "count-stacked-bar", w, countBarH);
 
-    ;
-
-
-
-//    console.log(h + " " + w);
     vis.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + h + ")")
@@ -332,7 +358,6 @@ function initBezier(target)
             x0 = 0;
     for (var i = 0, j = phases.length; i < j; i++)
     {
-
         if (phases[i].size > 0) {
             phases[i].x = x0;
             x0 += phases[i].size;
@@ -348,7 +373,6 @@ function initBezier(target)
             })
             .attr("x1", function(d, i) {
                 return w * d.x;
-
             })
             .attr("x2", function(d, i) {
                 return w * d.x;
@@ -371,29 +395,55 @@ function initBezier(target)
             })
             .attr("text-anchor", "middle");
 
-vis.append("g").attr("class", "g-year")
-        .append("text")
-        .attr({"id": "year-text", "text-anchor":"middle", "y":h-20,"x":w/2});
+    vis.append("g").attr("class", "g-year")
+            .append("text")
+            .attr({"id": "year-text", "text-anchor": "middle", "y": h - 20, "x": w / 2});
 
     vis.append("g").attr("class", "g-curves");
-
-//            .attr()
-
-
-
-
+    
+    var gc = vis.selectAll('.g-curves');
+    for(var i = 0, j=planesByDecade.length;i<j;i++)
+    {
+        var decade = planesByDecade[i].key;
+        console.log('adding decade '+decade)
+        gc.append("g").attr({'id':'g-curve-'+decade});
+    }
 }
+function updateCharts(year, comp, fade, updateCounter)
+{
+    var list = planesByYear[keyMaps["year"][year]].values.list;
+    console.log(list);
+    for (var i in list)
+    {
+        var chart = charts[list[i]];
+
+        chart.update(comp);
+        if (updateCounter)
+        {
+            var id = idMap[list[i]],
+                    data = planes[id];
+            countBar.update(data.total_occupants - data.total_fatalities, data.total_fatalities);
+        }
+    }
+    if (fade)
+    {
+        d3.selectAll(".object-year-" + year);
+    }
+}
+
 function drawBrezier(target, index, completed)
 {
+//    console.log('updating '+index);
     var data = planes[index],
             pts = data.points,
-            vis = d3.selectAll(target).selectAll("svg").select(".g-curves"),
+            decade = data.decade,
+            vis = d3.selectAll(target).selectAll("svg").select("#g-curve-"+decade),
             interpolation = vis.selectAll(".g-" + index)
             .data(function() {
                 var levels = getLevels(pts.length, completed, pts);
                 return [levels[levels.length - 1]];
             });
-//    console.log(pts);
+//    console.log(decade);
     interpolation.enter().append("g")
             .classed("g-" + index, true)
             .attr("data-x", function(d) {
@@ -470,7 +520,7 @@ function updateBrezier(target, index, completed)
     });
 
 }
-//d3.chart = d3.chart || {};
+
 brezier = function(index, target) {
 //    console.log("init brez " + index);
     var self = {}, ready = false;
@@ -538,7 +588,7 @@ stackedBar = function(target_g, id, w, h)
 //                .ticks(5)
                 .tickValues([25, 50, 75])
                 .tickSubdivide(20)
-                .tickSize(8, 8,1).tickFormat(function(d) {
+                .tickSize(8, 8, 1).tickFormat(function(d) {
             return d + "%";
         });
         bars.append("g").attr("class", "counter-axis")
@@ -619,6 +669,8 @@ function doScale(value, key)
 {
     if (value === 0)
         return 0;
-    var min = stats[key][0].values.min, max = stats[key][0].values.max;
+    var min = stats[key][0].values.min, max = stats[key][0].values[key].max;
     return (value - min) / (max - min);
 }
+
+

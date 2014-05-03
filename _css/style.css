@@ -10,6 +10,7 @@ and open the template in the editor.
 body{
     background-color: black;
     font-family: sans-serif;
+    /*width: 1000px;*/
 }
 text{fill:white;
 }
@@ -92,3 +93,41 @@ text{fill:white;
     fill: limegreen;
 }
 
+#decades-select{
+    /* display:inline-block; */
+    color:white;
+    width:100%;
+}
+#decades-select table{
+    width:100%;
+    border: 0;
+    padding: 2px;
+    text-align: center;
+    
+}
+.selected-decade{
+    background-color: rgba(255,255,255,.4);
+}
+#decades-select li{
+    display:inline-block;
+    padding:5px;
+}
+.highlighted-decade{
+    background-color: rgba(255,255,255,.1);
+}
+.decade-span{
+    width: 100%;
+    
+}
+.decade-span-selected{
+    
+}
+.died-span{
+    height:3px;
+    background-color: rgb(255,80,80);
+    border: 0;
+}
+.survived-span{
+    height:5px;
+    background-color:rgb(80,255,80);
+}
