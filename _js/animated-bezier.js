@@ -11,13 +11,16 @@ var width = 900, height = 500, bh = 0, bw = 0, default_opacity = .5,
         padding = 10,
         margin = {top: 20, right: 100, bottom: 30, left: 40},
 points = [], points_file = "_data/points.json",
-        phases = [], phases_file = "_data/phases.json", phaseMap = {};
-planes = [], planes_file = "_data/clean_planes.csv",
+        phases = [], phases_file = "_data/phases.json", phaseMap = {},
+        flight_natures = {}, flight_damages = {}, category_map = {},
+        planes = [], planes_file = "_data/clean_planes.csv",
         planesByYear = {}, planesByDecade = {};
 idMap = {}, keyMaps = {}, stats = {},
         num_headers = ["decade", "year", "month", "crew_occupants", "passengers_fatalities",
             "crew_fatalities", "total_fatalities", "total_occupants_old", "total_occupants",
             "passengers_occupants", "passengers_occupants_old"],
+        target_color_categories = ['airplane_damage', 'nature', 'make'],
+        circle_color_key = 'airplane_damage',
         beziers = {},
         pointsList = [],
         line = d3.svg.line().x(x).y(y),
@@ -26,7 +29,7 @@ idMap = {}, keyMaps = {}, stats = {},
         orders = d3.range(2, n + 2),
         charts = {}, last = 0, chartCount = 200, weight = 2, wild = 150,
         decade_mode = false, active_decade = 0, decadeMap = {};
-countBar = {}, countBarH = 80;//    console.log(points.length);
+countBar = {}, countBarH = 80, colors = d3.scale.category20();//    console.log(points.length);
 
 
 var ANIMATE = false;
@@ -58,8 +61,21 @@ function loadPlaneData()
     }
     console.log(phaseMap);
     console.log(phases);
+    var counters = {};
     for (var k = 0, l = planes.length; k < l; k++)
     {
+        for (var m = 0, n = target_color_categories.length; m < n; m++)
+        {
+            var category = target_color_categories[m];
+            if (!counters[category])
+                counters[category] = 0;
+            if (!category_map[category])
+                category_map[category] = {};
+            if (!category_map[category][planes[k][category]])
+            {
+                category_map[category][planes[k][category]] = {count: 1, id: counters[category]++};
+            }
+        }
         for (var i = 0, j = num_headers.length; i < j; i++)
         {
             planes[k][num_headers[i]] = parseInt(planes[k][num_headers[i]]);
@@ -91,6 +107,7 @@ function loadPlaneData()
         stats[num_headers[i]] = doNest(planes, "All", [num_headers[i]], false, false);
     }
     planesByYear = doNest(planes, "year", "year", true, true);
+    console.log(category_map);
 }
 
 function doNest(data, key, measure, addList, addIndeces)
@@ -503,15 +520,19 @@ function drawBrezier(target, index, completed)
             .classed("circle-year-" + data.year, true)
             .classed("object-year-" + data.year, true)
             .classed("object-id-" + index, true)
-            .attr("data-id", index)
-            .attr("r", function(d) {
-                var key = "total_occupants",
-                        scale = doScale(data[key], key);
+            .attr({"data-id": index,
+                "r": function(d) {
+                    var key = "total_occupants",
+                            scale = doScale(data[key], key);
 //                console.log(d.x);
-                return 20 * scale + 1;
-            })
-            .attr("cx", x)
-            .attr("cy", y);
+                    return 20 * scale + 1;
+                },
+                "cx": x,
+                "cy": y})
+            .style({
+                'fill': function() {
+                    return colors(category_map[circle_color_key][data[circle_color_key]].id);
+                }});
     var curve1 = vis.selectAll(".g-" + index).selectAll(".curve-before-" + index)
             .data(function(d) {
                 var c = getCurve(pts.length, index, pts, 0, completed);
