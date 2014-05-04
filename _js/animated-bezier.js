@@ -217,7 +217,7 @@ function loadDecades()
 //        $('.object-year')
 
 //    console.log(self.attr('data-decade'));
-    }).on("mouseenter", function(d) {
+    }).on("mouseover", function(d) {
         var decade = $(this).attr('data-decade');
         console.log('highlighting ' + decade);
         if (!$(this).hasClass('selected-decade'))
@@ -568,7 +568,7 @@ function drawBrezier(target, index, completed)
             .attr("data-id", index)
             .attr("d", line);
 
-    $('.object-id-' + index).on('mouseenter', function(event) {
+    $('.object-id-' + index).on('mouseover', function(event) {
         var i = $(this).attr('data-id');
         $("#tooltip")
                 .css("visibility", "visible")
