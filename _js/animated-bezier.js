@@ -87,7 +87,7 @@ function loadPlaneData()
             }
             else
             {
-                planes[k]["phase_location"] = phase.cum_size - phase.size * Math.random();
+                planes[k]["phase_location"] = phase.cum_size - phase.size +phase.size * Math.random()/4;
             }
         }
         var phase = phases[phaseMap[planes[k].phase_code]];
@@ -368,7 +368,7 @@ function prepareStraightPoints(target, data)
                 survivors = data[i].total_occupants - data[i].total_fatalities;
         try {
 
-            planes[idMap[data[i].id]].phase_location = phase.cum_size - phase.size + phase.size * Math.random() / 2;
+//            planes[idMap[data[i].id]].phase_location = phase.cum_size - phase.size + phase.size * Math.random() / 2;
             var pts = [],
                     pl = planes[idMap[data[i].id]].phase_location,
                     start = (max - min === 0) ? .5 : 1 - (data[i].total_occupants - min) / (max - min),
