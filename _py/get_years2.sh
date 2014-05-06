@@ -1,0 +1,10 @@
+python url_list.py 1919 1930 &
+python url_list.py 1930 1940 & 
+python url_list.py 1940 1950 &
+python url_list.py 1950 1960 &
+python url_list.py 1960 1970 &
+python url_list.py 1970 1980 &
+python url_list.py 1980 1990 &
+python url_list.py 1990 2000 &
+python url_list.py 2000 2010 &
+python url_list.py 2010 2015 &

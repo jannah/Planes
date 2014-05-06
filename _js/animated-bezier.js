@@ -7,7 +7,7 @@ var width = 900, height = 500, bh = 0, bw = 0, default_opacity = .5,
         first_year = 2100,
         current_year = 0, last_year,
         delta = .025,
-        svg_padding = 5,
+        svg_padding = 5, min_r=2, max_r=25
         padding = 10,
         margin = {top: 20, right: 100, bottom: 30, left: 40},
 points = [], points_file = "_data/points.json",
@@ -87,7 +87,7 @@ function loadPlaneData()
             }
             else
             {
-                planes[k]["phase_location"] = phase.cum_size - phase.size +phase.size * Math.random()/4;
+                planes[k]["phase_location"] = phase.cum_size - phase.size + phase.size * Math.random() / 4;
             }
         }
         var phase = phases[phaseMap[planes[k].phase_code]];
@@ -191,7 +191,7 @@ function loadDecades()
                 perc_f = (occupants > 0) ? fatalities / occupants : 0,
                 perc_s = (occupants > 0) ? survivors / occupants : 0,
                 tw = parseInt(decselect.css("width")),
-                lw = tw / j - 2;
+                lw = tw / j - (10);
         if (perc_f + perc_s === 0)
             perc_f = perc_s = 0.5;
         decadeMap[decade] = i;
@@ -262,7 +262,7 @@ function initCharts(target)
     var svgw = parseInt($(target).css("width")),
             svgh = parseInt($(target).css("height"));
     bw = svgw;
-    bh = svgh / 2;
+    bh = svgh;
     var w = bw, h = bh;
     for (var i = 0, j = points.length; i < j; i++)
     {
@@ -281,14 +281,14 @@ function initCharts(target)
     var vis = d3.select(target).selectAll("svg")
             .data([points.length]).enter()
             .append("svg")
-            .attr("width", svgw + 2 * padding)
-            .attr("height", svgh + 2 * padding)
+            .attr("width", svgw)
+            .attr("height", svgh)
             .append("g")
-            .attr("transform", "translate(" + (padding) + "," + (padding) + ")")
+//            .attr("transform", "translate(" + (padding) + "," + (padding) + ")")
             .attr("id", target.split("#")[1] + "-top")
-            .append("g").attr("id", "breziers-group")
-            .attr("transform", "translate(" + 0 + "," + countBarH + ")");
-    countBar = stackedBar(target.split("#")[1] + "-top", "count-stacked-bar", w, countBarH);
+            .append("g").attr("id", "breziers-group");
+//            .attr("transform", "translate(" + 0 + "," + 0 + ")");
+    countBar = stackedBar("#counter-chart", "count-stacked-bar");
 
     vis.append("g")
             .attr("class", "x axis")
@@ -525,7 +525,7 @@ function drawBrezier(target, index, completed)
                     var key = "total_occupants",
                             scale = doScale(data[key], key);
 //                console.log(d.x);
-                    return 20 * scale + 1;
+                    return max_r * scale + min_r;
                 },
                 "cx": x,
                 "cy": y})
@@ -570,16 +570,18 @@ function drawBrezier(target, index, completed)
 
     $('.object-id-' + index).on('mouseover', function(event) {
         var i = $(this).attr('data-id');
-        $("#tooltip")
-                .css("visibility", "visible")
-                .html(formatPlaneHTML(i))
-                .css("top", function() {
-                    return (event.pageY - 170) + "px";
-                })
-                .css("left", function() {
-                    return (event.pageX - 100) + "px";
-                });
-        console.log('displaying tooltip');
+        $('#narratives').empty().html(formatPlaneHTML(i));
+        
+//        $("#tooltip")
+//                .css("visibility", "visible")
+//                .html(formatPlaneHTML(i))
+//                .css("top", function() {
+//                    return (event.pageY - 170) + "px";
+//                })
+//                .css("left", function() {
+//                    return (event.pageX - 100) + "px";
+//                });
+//        console.log('displaying tooltip');
     }).on('mouseleave', function(d) {
         d3.select("#tooltip").style("visibility", "hidden");
     })
@@ -629,21 +631,25 @@ brezier = function(index, target) {
     return self;
 };
 
-stackedBar = function(target_g, id, w, h)
+stackedBar = function(target_g, id)
 {
     var self = {}, survived = 0, died = 0, total = 0,
-            vis = d3.selectAll("#" + target_g), bars,
+            vis, bars,
             died_bar, survived_bar, survived_text, died_text,
-            survived_count, died_count;
+            survived_count, died_count,
+            w = parseInt($(target_g).css("width")),
+            h = parseInt($(target_g).css("height"));
+    console.log(target_g + " dim: " + w + "\t" + h);
 //    var h, w;
     self.draw = function()
     {
 //        console.log("drawing " + id);
 
-
+        vis = d3.selectAll(target_g)
+                .append("svg")
         vis.append("g").attr("id", id).
                 classed("stacked-bar", true)
-                .attr("transform", "translate(" + 0 + "," + 0 + ")");
+//                .attr("transform", "translate(" + 0 + "," + 0 + ")");
 //        console.log(id);
 
         bars = vis.selectAll("#" + id);
@@ -782,6 +788,7 @@ function startTimer()
     duration = max_duration;
     t = 0;
     console.log(stats["year"]);
+    var slider_value_list = [];
     if (decade_mode)
     {
 //        duration = 1000;
@@ -799,6 +806,10 @@ function startTimer()
         current_year = stats["year"][0].values.year.min;
         last_year = stats["year"][0].values.year.max;
     }
+    for (var i = current_year; i < last_year; i++)
+        slider_value_list.push(i);
+    setSliderValues(slider_value_list, .1);
+    updateSliderValue(0);
     console.log("starting from " + current_year);
 //    var active_years = [];
 //    var year_count = 5;
@@ -817,14 +828,15 @@ function startTimer()
                 if (skip_count > 0)
                 {
                     skip_count--;
-                    t = temp_t;
-                    time = Math.floor(time);
+//                    t = temp_t;
+
                     duration = max_duration;
                 }
                 else {
+                    
                     updateCharts(current_year, t, true, true);
-                    t = temp_t;
-                    time = Math.floor(time);
+//                    t = temp_t;
+//                    time = Math.floor(time)+1;
                     if (current_year < last_year)
                     {
                         current_year++;
@@ -840,10 +852,14 @@ function startTimer()
                         stopAnimation();
                     }
                 }
-                time += t;
+                t = 0;
+                
+//                time += t;
             }
             else
                 time += t - last_t;
+            updateSliderValue(time);
+
             last_t = t;
             last = elapsed;
 
@@ -859,7 +875,7 @@ function startTimer()
                 toggleAnimation();
             }
             return !ANIMATE;
-        }, 100, Date.now());
+        }, 10, Date.now());
     }
 }
 function toggleAnimation()
@@ -892,8 +908,25 @@ function formatPlaneHTML(index)
     html += "<table>";
     for (var i in item)
     {
-        html += "<tr><td>" + i + "</td><td>" + item[i] + "</td></tr>"
+        html += "<tr><td>" + i + "</td><td>" + item[i] + "</td></tr>";
     }
     html += '</table>';
     return html;
+}
+function getSliderValue() {
+    return $('#play-slider').value();
+}
+function updateSliderValue(value) {
+    if (value)
+        $('#play-slider').val(value);
+    else
+        value = $('#play-slider').val();
+
+    $('#slider-label').text(value);
+
+}
+function setSliderValues(values, step) {
+    $('#play-slider').attr({
+        min: 0, max: values.length, step: step
+    });
 }
