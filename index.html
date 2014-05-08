@@ -23,7 +23,7 @@ and open the template in the editor.
     <body>
 
         <div id="top-menu">
-            <input id="animate-button" type="button" onclick="toggleAnimation()" value="start"/>
+            
             <!--<span class="counter-span"><label id="year-label"></label></span>-->
             <div id="top-menu-tabs">
                 <ul><li class='selected-top-menu-item'>Browse By Decade</li>
@@ -45,8 +45,9 @@ and open the template in the editor.
             <div id="plane-curves"></div>
             <div id="narratives"></div>
             <div id="player">
-                <input type='button' id='play-button'/>
-                <input id='play-slider' type="range" min="0" max="50" value="25" step="5" onchange='updateSliderValue()' />
+                <!--<input type='button' id='play-button'/>-->
+                <input id="play-button" type="button" onclick="toggleAnimation()" value="&#9658;"/>
+                <input id='play-slider' type="range" min="0" max="10" value="0" step="0.1" onchange='updateSliderValue()' />
                 <output for='play-slider' id='slider-label'></output>
             </div>
             <div id="side_menu"> 

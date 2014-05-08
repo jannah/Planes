@@ -89,6 +89,7 @@ body{
     float: right;
     background-color:  rgba(255,255,255,.1);
     /* border: 1px solid rgba(255,255,255,.1); */
+    overflow-y: auto;
 }
 
 #plane-curves{
@@ -243,9 +244,13 @@ text{fill:white;
 .counter-axis {fill:white;font-size:12px;}
 #year-text{font-size:20px;}
 .tick line{stroke:white;}
-.phase-line{
+.phase-line, .phase-chart-bar{
     /*fill:rgba(200,200,200,.7);*/
     stroke:rgba(255,100,100,.7);
+}
+
+.phase-chart-bar{
+	fill:rgba(255,100,100,.3);
 }
 .phase-text{
     fill: white;
@@ -276,9 +281,9 @@ text{fill:white;
 }
 
 #play-button{
-    width: 20px;
+    width: 61px;
     
-    height: 20px;
+    height: 30px;
 }
 #play-slider{
     width: calc(100% - 29px);
@@ -298,3 +303,5 @@ input[type="range"]::-webkit-slider-thumb {
     border-radius: 12.5px;
     -webkit-box-shadow: inset 0 0 5px #333;
 }
+
+
