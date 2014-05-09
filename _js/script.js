@@ -34,12 +34,15 @@ var countStats = {};
 var MAX_SPLINE_H = 100;
 var SPLINE_MEASURE = 'count', CHART_MEASURE = 'count';
 var timeLineChart;
+var worst = {}, weird = {};
+
 function init()
 {
 	setupInteractions();
 	loadPlaneData();
 	prepareGroupedPlaneData();
 	loadDecades();
+	$('#chart-area').show();
 	// updateActiveYears(2000, 2009);
 	updateActiveYears(1900, 2014);
 	initPlaneChart("#plane-curves");
@@ -68,6 +71,32 @@ function setupInteractions()
 	{
 		stopAnimation();
 	});
+
+	$('#top-menu-tabs ul li').on('click', function()
+	{
+		var self = $(this);
+
+		var target = self.attr('data-target');
+		console.log(target);
+		var active_view = $('.active-view').attr('data-target');
+		var old_id = $('.active-view').attr('id');
+		console.log(old_id)
+		$('.selected-top-menu-item').removeClass('selected-top-menu-item').addClass('top-menu-item');
+		self.addClass('selected-top-menu-item').removeClass('top-menu-item');
+		$('#' + old_id).removeClass('active-view').fadeOut(500);
+		$('.view').hide();
+		$('#' + target).addClass('active-view').fadeIn(500);
+
+		if (target === 'chart-area')
+			$('#sub-menu').fadeIn(500);
+		else
+			$('#sub-menu').fadeOut(500);
+
+	})
+	$('#story-div').on('click', function()
+	{
+		$(this).fadeOut(500);
+	})
 }
 
 function loadPlaneData()
@@ -78,7 +107,29 @@ function loadPlaneData()
 
 	for (var i = 0, j = planes.length; i < j; i++) {
 		idMap[planes[i].id] = i;
+		if (planes[i].worst_flag != 0)
+			worst[planes[i].worst_flag] = i;
+
+		if (planes[i].unusual_flag != 0)
+			weird[planes[i].unusual_flag] = i;
 	}
+	fillList('#worst-list', worst);
+	fillList('#weird-list', weird);
+	$('.rank-list li').on('click', function(d)
+	{
+		index = parseInt($(this).attr('data-i'));
+
+		$('#story-div').empty().html(formatPlaneLong(index)).css("visibility", "visible").fadeIn(500).css("top", function()
+		{
+			return (event.pageY - 60) + "px";
+		}).css("left", function()
+		{
+			return (event.pageX + 30) + "px";
+		});
+	})
+
+	console.log(worst);
+	console.log(weird);
 	//    console.log(idMap);
 	var cum = 0;
 	for (var i = 0, j = phases.length; i < j; i++) {
@@ -640,7 +691,7 @@ function initPlaneChart(target)
 
 	timeLineChart = lineChart('#narratives', 'time-line-chart');
 	initGradient(vis);
-	vis.append("g").attr("class", "x axis").attr("transform", "translate(0," + h + ")").call(xAxis);
+	vis.append("g").attr("class", "x-axis").attr("transform", "translate(0," + h + ")").call(xAxis);
 	drawPhaseLines(vis, w, curvesH);
 	// drawYearText(vis, 20, curvesH - 10);
 
@@ -812,6 +863,10 @@ splineLine = function(target, target_g, id, data, index, phase, year, w, h)
 		});
 		gradient = vis.select('#gradient-' + phase);
 	};
+	self.reset = function(){
+		vis.datum([{'x':0,'y':0}]).attr({
+				'd' : line,})
+	}
 	self.update = function(t0, year)
 	{
 		// console.log();
@@ -1195,7 +1250,7 @@ backgroundPhaseBarChart = function(target, id, w, h, trans_x, trans_y)
 				'id' : 'phase-chart-bar-title',
 				'class' : 'chart-title',
 				'x' : w - 20,
-				'y' : h,
+				'y' : h - 10,
 				'text-anchor' : 'end'
 			}).text(target_measures_titles[measure]);
 			id = '#' + id;
@@ -1203,7 +1258,27 @@ backgroundPhaseBarChart = function(target, id, w, h, trans_x, trans_y)
 		}
 
 	};
-	self.update = function(year, phase, value)
+	self.reset = function()
+	{
+		for (var i = 0, j = new_phases.length; i < j; i++) {
+			var ph =new_phases[i].code;
+			key = '#phase-chart-bar-' + ph;
+			vis.select(key).transition().duration(dur).attr({
+				height : function()
+				{
+					// console.log(val + "\t" + yScale(val));
+					return 0;
+				},
+				// 'y' : 0,
+				'data-value' : val,
+				'data-key' : measure,
+				// 'data-year' : year,
+				'data-phase' : ph
+			});
+
+		}
+	};
+	self.update = function(year, phase, value, reset)
 	{
 		// if (phase === 'LDG')
 		// console.log(phase + '\t' + value);
@@ -1249,6 +1324,7 @@ backgroundPhaseBarChart = function(target, id, w, h, trans_x, trans_y)
 			// console.log(key);
 			// val = (value>0)?data[measure][ph][year]:0;
 			val = data[measure][ph][year];
+			val = (reset) ? 0 : val;
 			vis.select(key).transition().duration(dur).attr({
 				height : function()
 				{
@@ -1336,12 +1412,12 @@ lineChart = function(target, id)
 			"transform" : "translate(" + (margin.left - 10) + "," + margin.top + ")"
 		});
 		vis.append("g").attr({
-			"class" : "x axis",
+			"class" : "x-axis",
 			'id' : 'line-x-axis',
 			"transform" : "translate(0," + height + ")"
 		}).call(xAxis);
 		vis.append("g").attr({
-			"class" : "y axis",
+			"class" : "y-axis",
 			'id' : 'line-y-axis'
 		}).call(yAxis).append("text").attr("transform", "rotate(-90)").attr({
 			"dy" : ".71em"
@@ -1593,6 +1669,7 @@ function updateCharts(year, comp, updateCounter)
 	updateSplines(comp, year);
 	// if (updateCounter)
 	// countBar.update(year);
+	phaseCountBar.update(false, false, 0, true);
 
 }
 
@@ -1603,7 +1680,13 @@ function updateSplines(t0, year)
 		splines[i].update(t0, year);
 	}
 }
-
+function resetSplines()
+{
+		for (var i in splines) {
+		// console.log(s);
+		splines[i].reset();
+	}
+}
 /**********************
  *  SLIDER
  *******************/
@@ -1615,7 +1698,7 @@ function getSliderValue()
 var prev_active_phase;
 function updateSliderValue(value)
 {
-	if (value)
+	if (value || value === 0)
 		$('#play-slider').val(value);
 	else
 		value = $('#play-slider').val();
@@ -1647,6 +1730,11 @@ function updateSliderValue(value)
 					break;
 
 			}
+		}
+		if (value === 0) {
+			phaseCountBar.reset();
+			resetSplines();
+			
 		}
 
 		if (active_phase !== prev_active_phase || current_year !== cyear) {
@@ -1685,4 +1773,30 @@ function setSliderValues(values, step)
 
 	$('#player-start').text(values[0].year);
 	$('#player-finish').text(values[values.length - 1].year);
+}
+
+function fillList(target_list, data_list)
+{
+	list = $(target_list)
+	for (var d in data_list) {
+		list.append(formatPlaneShort(data_list[d]))
+
+	}
+
+}
+
+function formatPlaneLong(index)
+{
+	var plane = planes[index];
+	var html = "<table><tr><td><span class='p-head-span'>Date: </span></td><td><span class='p-val-span'>" + plane.date_text + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Operator: </span></td><td><span class='p-val-span'>" + plane.operator + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Type: </span></td><td><span class='p-val-span'>" + plane.type + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Nature: </span></td><td><span class='p-val-span'>" + plane.nature + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Departure: </span></td><td><span class='p-val-span'>" + plane.departure_airport + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Destination: </span></td><td><span class='p-val-span'>" + plane.destination_airport + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Location: </span></td><td><span class='p-val-span'>" + plane.location_full + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Phase: </span></td><td><span class='p-val-span'>" + plane.phase + "<span></td></tr>" + "<tr><td><span class='p-head-span'>Occupants: </span></td><td><span class='p-val-span'>" + plane.total_occupants + ' (' + plane.passengers_occupants + ' Passngers, ' + plane.crew_occupants + ' Crew)' + "<span></td></tr>" + "<tr><td><span class='p-head-span'>Fatalities: </span></td><td><span class='p-val-span'>" + plane.total_fatalities + ' (' + plane.passengers_fatalities + ' Passngers, ' + plane.crew_fatalities + ' Crew)' + "<span></td></tr>" + "<tr><td><span class='p-head-span'>Survivors: </span></td><td><span class='p-val-span'>" + plane.total_survivors + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Ground Casualties: </span></td><td><span class='p-val-span'>" + plane.ground_casualties + "</span></td></tr>" + "<tr><td><span class='p-head-span'>Airplane Damage: </span></td><td><span class='p-val-span'>" + plane.airplane_damage + "</span></td></tr></table>" + "<span class='p-head-span'>Narrative:</span><br><span class='p-val-span'>" + plane.narrative + "</span>";
+
+	return html;
+
+}
+
+function formatPlaneShort(index)
+{
+	var plane = planes[index];
+	var html = "<li data-i='" + index + "'><span class='p-head-span'>" + plane.date_text + ", " + plane.accident_country + "<span><br>" + "<span class='p-head-span'>O:</span><span class='p-val-span'>" + plane.total_occupants + ' (' + plane.passengers_occupants + ' P, ' + plane.crew_occupants + ' C)' + "<span><br>" + "<span class='p-head-span'>F:</span><span class='p-val-span'>" + plane.total_fatalities + ' (' + plane.passengers_fatalities + ' P, ' + plane.crew_fatalities + ' C)' + "<span><br></li>"
+	return html;
 }

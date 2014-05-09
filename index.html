@@ -11,6 +11,7 @@ and open the template in the editor.
 		<!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
 		<link rel="stylesheet" href="_css/style.css">
 		<link href='http://fonts.googleapis.com/css?family=Droid+Sans:400,700' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" href="_css/sankey.css">
 		<!--<link rel="stylesheet" href="_css/ui-darkness/jquery-ui-1.10.4.custom.css">-->
 		<script src="_js/jquery-1.11.0.min.js"></script>
 		<!--<script src="_js/jquery-ui-1.10.4.custom.min.js"></script>-->
@@ -28,14 +29,17 @@ and open the template in the editor.
 			<!--<span class="counter-span"><label id="year-label"></label></span>-->
 			<div id="top-menu-tabs">
 				<ul>
-					<li class='selected-top-menu-item'>
+					<li class='selected-top-menu-item' data-target='chart-area'>
 						Browse By Decade
 					</li>
-					<li class='top-menu-item'>
+					<li class='top-menu-item' data-target='worst-area'>
 						Worst 100
 					</li>
-					<li class='top-menu-item'>
+					<li class='top-menu-item' data-target='weird-area'>
 						Unusual 100
+					</li>
+					<li class='top-menu-item' data-target='sankey-div'>
+						Explore More
 					</li>
 				</ul>
 
@@ -49,8 +53,7 @@ and open the template in the editor.
 			</div>
 		</div>
 
-		<div id="chart-area">
-
+		<div id="chart-area" class='view active-view'>
 			<div id="counter-chart"></div><div id='narrative-header'></div>
 			<div id="plane-curves"></div>
 			<div id="narratives"></div>
@@ -89,7 +92,37 @@ and open the template in the editor.
 			</div>
 			<div id="tooltip"></div>
 		</div>
-		<div id='worst-area'></div>
-		<div id='weird-area'></div>
+		<div id='worst-area'  class='view'>
+			<ul id='worst-list' class='rank-list'></ul>
+		</div>
+		<div id='weird-area'  class='view'>
+			<ul id='weird-list' class='rank-list'></ul>
+		</div>
+		<div id='story-div'></div>
+		<div id='sankey-div'  class='view'>
+			
+			<h1> AirPlane Crashes - Exploratory Tool</h1>
+			<p>
+				Pick from the drop down boxes to explore more
+			</p>
+			<select name="select1" id="select1">
+				<option value="select">-- select an option --</option>
+				<option value="decade">Decade</option>
+				<option value="make">Make</option>
+				<option value="accident_country">Country</option>
+				<option value="month">Month</option>
+				<option value="airplane_damage">Airplane Damage</option>
+				<option value="phase">Phase</option>
+			</select>
+			<select name="select2" id="select2">
+				<option value="select">-- select an option --</option>
+			</select>
+
+			<input type="submit" id="submit">
+			</input>
+			<p id = "sankey"></p>
+			<script src="_js/sankey.js"></script>
+			<script src="_js/mySankey.js"></script>
+		</div>
 	</body>
 </html>
