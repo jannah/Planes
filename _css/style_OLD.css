@@ -1,0 +1,314 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Apr 28, 2014, 9:44:08 PM
+    Author     : Jannah
+*/
+/*
+@font-fact{
+	font-family: Aliquam;
+	src: url('Aliquam.tff');
+}*/
+html, body {
+    height: 100%;
+    font-family: sans-serif;
+}
+
+html {
+    display: table;
+    margin: auto;
+}
+
+
+body{
+    display: table-cell;
+    vertical-align: middle;
+    background-color: black;
+    /*font-family: sans-serif;*/
+    color:white;
+    width: 1000px;
+    padding: 0px;
+}
+
+
+#decades-select{
+    /* display:inline-block; */
+    color:white;
+    width:100%;
+    padding: 0px;
+}
+#decades-select table{
+    width:100%;
+    border: 0;
+    padding: 2px;
+    text-align: center;
+
+}
+.selected-decade{
+    background-color: rgba(255,255,255,.4);
+}
+#decades-select li{
+    display:inline-block;
+    padding:5px;
+}
+.highlighted-decade{
+    background-color: rgba(255,255,255,.1);
+}
+.decade-span{
+    width: 100%;
+
+}
+.decade-span-selected{
+
+}
+
+#tooltip{
+    visibility: hidden;
+    position: absolute;
+    z-index:1000;
+    background-color: rgba(255,255,255,.3);
+    width: 300px;
+    color:white;
+}
+
+#side_menu{
+    width: 25%;
+    height: 50px;
+    display: inline-block;
+    float: left;
+    padding: px;
+}
+#chart-area{
+    width:100%;
+    padding: 0;
+    height: 550px;
+    display: inline-block;
+    float: left;
+}
+#narratives{
+    width: 25%;
+    height: 400px;
+    display: inline-block;
+    float: right;
+    background-color:  rgba(255,255,255,.1);
+    /* border: 1px solid rgba(255,255,255,.1); */
+    overflow-y: auto;
+}
+
+#plane-curves{
+    width: 75%;
+    padding: 0px;
+    height: 400px;
+    display: inline-block;
+    float: left;
+}
+/*#plane-curves-top{
+    width: inherit;
+    height: inherit;
+}*/
+
+#player{
+    width: 75%;
+
+    height: 50px;
+    display: inline-block;
+    float: left;
+}
+#sub-menu{
+    padding: 0px;
+    width: inherit;
+
+    margin-top: -12px;
+}
+#top-menu{
+    width:100%;
+    /* padding: 0px; */
+    /* margin: 0px; */
+}
+#top-menu-tabs{
+    width:inherit;
+    padding: 0px;
+    /* margin: 0px; */
+}
+#top-menu-tabs ul{
+    padding: 0px;
+
+}
+.selected-top-menu-item, .selected-side-menu-item{
+    background-color: rgba(255,255,255,.3);
+}
+.top-menu-item, .side-menu-item{
+    background-color: rgba(255,255,255,.1);
+
+}
+
+.top-menu-item:hover, .side-menu-item:hover{
+    background-color: rgba(255,255,255,.2);
+
+}
+#sub-menu li{
+
+}
+.side-menu-item{
+    display: inline-block;
+    width:20px;
+    height:20px;
+    vertical-align: middle;
+    text-align: center;
+    padding:2px;
+}
+#side-menu-list{
+    padding:0px;
+    display: inline-block;
+    float: left;
+}
+#top-menu-tabs li{
+
+    display: inline-block;
+    width:20%;
+    border: 1px rgb(255,255,255);
+    max-width: 200px;
+    height: 30px;
+    line-height: 1.5em;
+    vertical-align: middle;
+    text-align: center;
+}
+#counter-chart{
+    width: 75%;
+    height: 50px;
+    display: inline-block;
+    float: left;
+}
+#unusual-desc, #worst-desc{
+
+}
+.sub-menu-item{
+    width:100%;
+}
+
+
+/*** SVG ****/
+
+
+text{fill:white;
+}
+.circle, .line{
+    /*display:none;*/
+}
+.point,.guide-line{
+    display:block
+        ;
+}
+.guide{
+    /*display:none;*/
+}
+.curve, .line {
+    fill: none;
+    stroke-width: 2px;
+}
+.curve {
+    /*stroke: red;*/
+    /*stroke-width: .5px;*/
+    fill:red;
+
+}
+.curve-before{
+    stroke:white;
+}
+.curve-after{
+    stroke:red;
+}
+.control {
+    fill: #ccc;
+    stroke: #000;
+    stroke-width: .1px;
+    display:none;
+
+}
+.t, .controltext {
+    font-size: .6em;
+}
+
+
+.died-span{
+    height: 3px;
+    background-color: rgb(255,80,80);
+    border: 0;
+}
+.survived-span{
+    height: 3px;
+    background-color:rgb(80,255,80);
+}
+.g-curve{
+
+    opacity:.6;
+}
+
+.bar-count{fill:white;padding:0 10px 0 10px; font-size:15px;}
+.counter-axis {fill:white;font-size:12px;}
+#year-text{font-size:20px;}
+.tick line{stroke:white;}
+.phase-line, .phase-chart-bar{
+    /*fill:rgba(200,200,200,.7);*/
+    stroke:rgba(255,100,100,.7);
+}
+
+.phase-chart-bar{
+	fill:rgba(255,100,100,.3);
+}
+.phase-text{
+    fill: white;
+    font-size: 10px;
+}
+.counter-span{
+    color: white;
+}
+.faded{
+    opacity: .5;
+}
+.point{
+    fill: limegreen;
+}
+
+#count-stacked-bar{
+    width: inherit;
+    height: 100px;
+}
+#survived-bar{
+    fill: green;
+}
+#died-bar{
+    fill: red;
+}
+.bar-text{
+    fill:white;
+}
+
+#play-button{
+    width: 61px;
+    
+    height: 30px;
+}
+#play-slider{
+    width: calc(100% - 29px);
+        display: inline-block;
+    height: 3px;
+    /*width: 100%;*/
+    -webkit-appearance: none;
+    -webkit-border-radius: 1px;
+    -webkit-box-shadow: inset 0 0 5px #333;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background-color: rgb(0,120,200);
+    opacity: 0.8;
+    width: 20px;
+    height: 20px;
+    border-radius: 12.5px;
+    -webkit-box-shadow: inset 0 0 5px #333;
+}
+
+

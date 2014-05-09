@@ -9,8 +9,8 @@ $(document).ready(function()
 	init();
 });
 
-var width = 900, height = 500, bh = 0, bw = 0, default_opacity = .5, t = .5, time = 0, duration = 4000;
-var max_duration = 6000, min_duration = 2000, acceleration = 1.2;
+var width = 900, height = 500, bh = 0, bw = 0, default_opacity = .5, t = .5, time = 0, duration = 500;
+var max_duration = 5000, min_duration = 500, acceleration = 1.2;
 var first_year = 2100, current_year = 0, last_year, delta = .01, svg_padding = 5;
 var min_r = 2, max_r = 25, padding = 10, margin = {
 	top : 20,
@@ -24,7 +24,7 @@ var min_r = 2, max_r = 25, padding = 10, margin = {
 }, planes = [];
 var planes_file = "_data/clean_planes_all.csv", planesByYear = {}, planesByDecade = {}, planesByYearPhase = {}, planeStats = {}, idMap = {}, keyMaps = {}, stats = {};
 var num_headers = ["decade", "year", "month", "crew_occupants", "passengers_fatalities", "crew_fatalities", "total_fatalities", "total_occupants_old", "total_occupants", "passengers_occupants", "passengers_occupants_old"], target_color_categories = ['airplane_damage', 'nature', 'make'], circle_color_key = 'airplane_damage', beziers = {
-}, pointsList = [], line = d3.svg.line().x(x).y(y).interpolate('cardinal'), n = 4, stroke = d3.scale.category20b(), orders = d3.range(2, n + 2), charts = {
+}, pointsList = [], line = d3.svg.line().x(x).y(y), n = 4, stroke = d3.scale.category20b(), orders = d3.range(2, n + 2), charts = {
 }, last = 0, chartCount = 200, weight = 2, wild = 150;
 var decade_mode = false, active_decade = 0, decadeMap = {}, active_years = [], countBar = {}, phaseCountBar = {}, countBarH = 80, colors = d3.scale.category20();
 //    console.log(points.length);
@@ -32,22 +32,42 @@ var splines = {};
 var ANIMATE = false;
 var countStats = {};
 var MAX_SPLINE_H = 100;
-
+var SPLINE_MEASURE = 'count', CHART_MEASURE = 'count';
+var timeLineChart;
 function init()
 {
+	setupInteractions();
 	loadPlaneData();
 	prepareGroupedPlaneData();
 	loadDecades();
-updateActiveYears(2000, 2009);
+	// updateActiveYears(2000, 2009);
+	updateActiveYears(1900, 2014);
 	initPlaneChart("#plane-curves");
-	
-	prepareYearPoints('count', 2000, curvesW, curvesH);
+
+	prepareYearPoints('count', false, curvesW, curvesH);
 
 	// updateSplines(1);
 
 	// initCharts("#plane-curves");
 	// loadCharts("#plane-curves", planes);
 	//    startTimer();
+}
+
+function setupInteractions()
+{
+	$('.measure-option').on('click', function()
+	{
+
+		var self = $(this);
+		changeBarMeasure(self.attr('data-measure'));
+		self.siblings().removeClass('selected-side-menu-item').addClass('unselected-side-menu-item');
+		self.removeClass('unselected-side-menu-item').addClass('selected-side-menu-item');
+	});
+
+	$('#play-slider').on('mousedown', function()
+	{
+		stopAnimation();
+	});
 }
 
 function loadPlaneData()
@@ -63,7 +83,7 @@ function loadPlaneData()
 	var cum = 0;
 	for (var i = 0, j = phases.length; i < j; i++) {
 		cum += phases[i].size;
-		phases[i]["cum_size"] = cum;
+		phases[i]["cum_size"] = Math.round(cum * 100) / 100;
 		phaseMap[phases[i].code] = i;
 	}
 	// console.log(phaseMap);
@@ -102,10 +122,10 @@ function loadPlaneData()
 			planes[k]["phase_location"] = phase.cum_size - phase.size * Math.random();
 		}
 	}
-	for (var i = 0, j = num_headers.length; i < j; i++) {
-
-		stats[num_headers[i]] = doNest(planes, "All", [num_headers[i]], false, false);
-	}
+	// for (var i = 0, j = num_headers.length; i < j; i++) {
+	//
+	// stats[num_headers[i]] = doNest(planes, "All", [num_headers[i]], false, false);
+	// }
 
 	new_phases = [], x0 = 0;
 	for (var i = 0, j = phases.length; i < j; i++) {
@@ -115,12 +135,20 @@ function loadPlaneData()
 			new_phases.push(phases[i]);
 		}
 	}
+
 	// planesByYear = doNest(planes, "year", "year", true, true);
 
 	// console.log(category_map);
 }
 
-var target_measures = ["total_fatalities", "total_occupants", "total_survivors", "ground_casualties"];
+var target_measures = ["total_fatalities", "total_occupants", "total_survivors", "ground_casualties", 'count'];
+var target_measures_titles = {
+	"total_fatalities" : 'Fatalities',
+	"total_occupants" : 'Occupants',
+	"total_survivors" : 'Suvivors',
+	"ground_casualties" : 'Ground Casualties',
+	'count' : '# of Accidents'
+};
 function prepareGroupedPlaneData()
 {
 
@@ -193,6 +221,7 @@ function prepareGroupedPlaneData()
 	planesByDecade = flattenNest(planesByDecade);
 	planeStats = flattenNest(planeStats);
 	planeStats = planeStats['All'];
+
 	// console.log(planesByYearPhase);
 	// console.log(planesByYear);
 	// console.log(planesByDecade);
@@ -271,7 +300,7 @@ function computeCountStats(dataDict)
 			return parseInt(d);
 		})
 	};
-	console.log(item);
+	// console.log(item);
 	return item;
 }
 
@@ -284,7 +313,7 @@ function prepareYearPoints(measure, decade, w, h)
 	if (decade) {
 		if (measure == 'count') {
 			decades = {};
-			console.log(planesByDecade[decade]);
+			// console.log(planesByDecade[decade]);
 			years = planesByDecade[decade]['years'];
 			for (var i = 0, j = years.length; i < j; i++) {
 				var year = planesByDecade[decade]['years'][i];
@@ -316,8 +345,8 @@ function prepareYearPoints(measure, decade, w, h)
 		}
 	}
 
-	console.log(sum + '\t' + max + '\t' + min);
-	console.log(years);
+	// console.log(sum + '\t' + max + '\t' + min);
+	// console.log(years);
 
 	for (var i = 0, j = years.length; i < j; i++) {
 		var year = years[i], y0 = .2, plane = planesByYearPhase[year];
@@ -337,18 +366,18 @@ function prepareYearPoints(measure, decade, w, h)
 
 				pts2.push({
 					'x' : 0,
-					'y' : (y0 + thickness) * h
+					'y' : (y0 * h) + thicknessActual
 				});
 				for (var k = 0; k < point_count; k++) {
 					var phaseH = new_phases[k];
 					// console.log(phaseH.cum_size+"\t"+k)
 
 					if (k === point_count - 1 && Math.round(phaseV.cum_size * 100) === 100) {
-						console.log('last_point');
+						// console.log('last_point');
 						y1 = 1 * h;
-						y2 = (1 + thickness) * h;
+						y2 = 1 * h;
 						x1 = phaseH.cum_size * w;
-						x2 = phaseH.cum_size * w;
+						x2 = phaseV.cum_size * w - thicknessActual;
 					} else if (phaseH.cum_size < phaseV.cum_size) {
 						y1 = y0 * h;
 						y2 = (y0 + thickness) * h;
@@ -356,20 +385,8 @@ function prepareYearPoints(measure, decade, w, h)
 						x2 = phaseH.cum_size * w;
 
 					} else if (phaseH.code === phaseV.code) {
-						// y1 = y0;
-						// y2 = y0 + thickness;
-						// x1 = phaseH.cum_size;
-						// x2 = phaseH.cum_size;
-						// pts1.push({
-						// 'x' : x1,
-						// 'y' : y1
-						// });
-						// pts2.push({
-						// 'x' : x2,
-						// 'y' : y2
-						// });
 						y1 = y0 * h;
-						y2 = (y0 + thickness) * h;
+						y2 = y0 * h + thicknessActual;
 						x1 = phaseH.cum_size * w;
 						x2 = phaseH.cum_size * w - thicknessActual / 2;
 
@@ -388,8 +405,18 @@ function prepareYearPoints(measure, decade, w, h)
 						'x' : x2,
 						'y' : y2
 					});
-
+					if (k === point_count - 1) {
+						pts1.push({
+							'x' : x1,
+							'y' : y1
+						});
+						pts2.push({
+							'x' : x2,
+							'y' : y2
+						});
+					}
 				}
+
 				y0 += thickness;
 				planesByYearPhase[year][phaseV.code]['points'] = [pts1, pts2];
 			}
@@ -397,7 +424,7 @@ function prepareYearPoints(measure, decade, w, h)
 		}
 	}
 
-	console.log(planesByYearPhase[year]);
+	// console.log(planesByYearPhase[year]);
 }
 
 function updateActiveYears(min, max)
@@ -413,7 +440,7 @@ function updateActiveYears(min, max)
 		}
 	}
 	setSliderValues(active_years, delta);
-	// updateSliderValue(0);
+
 }
 
 function doNest(data, key, measure, addList, addIndeces)
@@ -551,21 +578,40 @@ function changeDecade(decade)
 	console.log(decade);
 	stopAnimation();
 	active_decade = parseInt(decade);
+	updateActiveYears(active_decade, active_decade + 9);
+	prepareYearPoints(SPLINE_MEASURE, decade, curvesW, curvesH);
 	decade_mode = true;
 	countBar.reset();
-	resetBreziers();
 
-	var data = [], list = planesByDecade[decadeMap[decade]].values.list;
+	// resetBreziers();
+
+	var data = [], years = planesByDecade[decade].years;
 	//    console.log(list);
-	for (var i = 0, j = list.length; i < j; i++) {
+	for (var i = 0, j = years.length; i < j; i++) {
 		//        console.log(list[i]);
-		data.push(planes[list[i]]);
+		data.push(planes[years[i]]);
 
 	}
 	//    console.log(data);
 
-	loadCharts("#plane-curves", data, decade, decade + 9);
+	// loadCharts("#plane-curves", data, decade, decade + 9);
+	phaseCountBar.refreshData(active_years);
+	timeLineChart.refreshData(active_years);
+	updateSliderValue(0);
 	//    startAnimation();
+
+}
+
+function changeBarMeasure(measure)
+{
+	console.log('changing bar measure ' + measure);
+	CHART_MEASURE = measure;
+	phaseCountBar.changeMeasure(measure);
+	timeLineChart.changeMeasure(measure)
+}
+
+function changeSplineMeasure(measure)
+{
 
 }
 
@@ -591,10 +637,12 @@ function initPlaneChart(target)
 	//            .attr("transform", "translate(" + 0 + "," + 0 + ")");
 	countBar = stackedBar("#counter-chart", "count-stacked-bar");
 	phaseCountBar = backgroundPhaseBarChart(target, "phase-bar-count", w, h - curvesH, 0, curvesH);
+
+	timeLineChart = lineChart('#narratives', 'time-line-chart');
 	initGradient(vis);
 	vis.append("g").attr("class", "x axis").attr("transform", "translate(0," + h + ")").call(xAxis);
 	drawPhaseLines(vis, w, curvesH);
-	drawYearText(vis, w / 2, curvesH - 10);
+	drawYearText(vis, 20, curvesH - 10);
 
 	initSplines(target, "g-splines", w, curvesH, 0, 0, active_years);
 	// drawDecadeGroups();
@@ -605,25 +653,25 @@ function initGradient(vis)
 {
 	for (var i = 0, j = new_phases.length; i < j; i++) {
 		var phase = new_phases[i];
-		var gradient = vis.append("svg:defs").append("svg:linearGradient").attr("id", "gradient-" + phase.code).attr({
-			"x1" : "0%",
-			"y1" : "0%",
-			"x2" : "100%",
-			"y2" : "0%",
-			"spreadMethod" : "pad"
-		});
-
-		gradient.append("svg:stop").attr({
-			"offset" : ((phase.cum_size - phase.size) * 100) + "%",
-			"stop-color" : "#fff",
-			"stop-opacity" : 1
-		});
-
-		gradient.append("svg:stop").attr({
-			"offset" : (phase.cum_size * 100 + 5) + "%",
-			"stop-color" : "#f00",
-			"stop-opacity" : 1
-		});
+		// var gradient = vis.append("svg:defs").append("svg:linearGradient").attr("id", "gradient-" + phase.code).attr({
+		// "x1" : "0%",
+		// "y1" : "0%",
+		// "x2" : "100%",
+		// "y2" : "0%",
+		// "spreadMethod" : "pad"
+		// });
+		//
+		// gradient.append("svg:stop").attr({
+		// "offset" : ((phase.cum_size - phase.size) * 100) + "%",
+		// "stop-color" : "#fff",
+		// "stop-opacity" : 1
+		// });
+		//
+		// gradient.append("svg:stop").attr({
+		// "offset" : (phase.cum_size * 100 + 5) + "%",
+		// "stop-color" : "#f00",
+		// "stop-opacity" : 1
+		// });
 	}
 
 }
@@ -673,62 +721,98 @@ function drawYearText(vis, xc, yc)
 	});
 }
 
-function initSplines(target, id, w, h, trans_x, trans_y, years)
+function initSplines(target, id, w, h, trans_x, trans_y)
 {
-// console.log(years);
-console.log(new_phases);
+
 	var vis = d3.select(target).select('svg').append('g').attr({
 		'id' : id
 	}).attr("transform", "translate(" + trans_x + "," + trans_y + ")");
-	for (var k = 0, l = years.length; k < l; k++) {
-		var year = (years[k].year)? years[k].year: years[k];
-		// console.log('init spline '+ year)
-		splines[year] = {};
-		for (var i = 0, j = new_phases.length; i < j; i++) {
-			var data = [{
-				key : 'phase_code',
-				value : new_phases[i]['code']
-			}, {
-				key : 'year',
-				'value' : year
-			}];
-			
-			var id2 = 'spline-' + new_phases[i]['code'] + '-' + year;
-			var spline = splineLine(target, '#' + id, id2, data, i, new_phases[i]['code'], year, w, h);
 
-			splines[year][new_phases[i]['code']] = spline;
-		}
+	for (var i = 0, j = new_phases.length; i < j; i++) {
+		var data = [{
+			key : 'phase_code',
+			value : new_phases[i]['code']
+		}];
+
+		var id2 = 'spline-' + new_phases[i]['code'];
+		var spline = splineLine(target, '#' + id, id2, data, i, new_phases[i]['code'], w, h);
+
+		splines[new_phases[i]['code']] = spline;
 	}
-	console.log(splines);
+
+	// console.log(splines);
 
 }
 
-
-
-
 splineLine = function(target, target_g, id, data, index, phase, year, w, h)
 {
-	var self = {}, vis = d3.select(target_g);
+	var self = {}, vis = d3.select(target_g), gradient = d3.select('#gradient-' + phase);
 
 	self.draw = function()
 	{
+		self.initGradient();
 		vis.append('path').attr({
 			'd' : line,
 			'class' : 'curve',
 			'id' : id
 		}).style({
 			'fill' : "url(#gradient-" + phase + ")",
-			'stroke' : "url(#gradient-" + phase + ")"
+			'stroke' : "url(#gradient-" + phase + ")",
+			'opacity' : .9
+			// 'stroke-width': '0px'
 		});
 		id = '#' + id;
 		vis = vis.select(id);
 		for (var i = 0, j = data.length; i < j; i++) {
 			vis.attr('data-' + data[i]['key'], data[i]['value']);
 		}
+		vis.on('mouseenter', function()
+		{
 
+			var me = $(this);
+
+			$("#tooltip").css("visibility", "visible").html(parseTooltipText(me)).css("top", function()
+			{
+				return (event.pageY - 60) + "px";
+			}).css("left", function()
+			{
+				return (event.pageX + 30) + "px";
+			});
+			console.log('displaying tooltip');
+
+		}).on('mouseleave', function()
+		{
+			d3.select("#tooltip").style("visibility", "hidden");
+		});
 	};
+	self.initGradient = function()
+	{
+		gradient = vis.append("svg:defs").append("svg:linearGradient").attr("id", "gradient-" + phase).attr({
+			"x1" : "0%",
+			"y1" : "0%",
+			"x2" : "100%",
+			"y2" : "0%",
+			"spreadMethod" : "pad"
+		});
 
-	self.update = function(t0)
+		gradient.append("svg:stop").attr({
+			// "offset" : ((phase.cum_size - phase.size) * 100) + "%",
+			"offset" : "0%",
+			"stop-color" : "#fff",
+			"stop-opacity" : 1,
+			'id' : "gradient-" + phase + "-1"
+		});
+
+		gradient.append("svg:stop").attr({
+			// "offset" : (phase.cum_size * 100 + 5) + "%",
+			"offset" : "100%",
+			"stop-color" : "#f00",
+			"stop-opacity" : 1,
+			'id' : "gradient-" + phase + "-2"
+		});
+		gradient = vis.select('#gradient-' + phase);
+	};
+	self.update = function(t0, year)
 	{
 		// console.log();
 		if (planesByYearPhase[year][phase]) {
@@ -740,6 +824,10 @@ splineLine = function(target, target_g, id, data, index, phase, year, w, h)
 
 			// console.log(pts1);
 			// console.log(pts2);
+			var phc = phases[phaseMap[phase]].cum_size - phases[phaseMap[phase]].size;
+
+			x1 = (phc > t0) ? '100%' : (1 - (t0 - phc)) * 100 + "%";
+			gradient.attr('x1', x1);
 
 			vis.datum(function()
 			{
@@ -751,17 +839,38 @@ splineLine = function(target, target_g, id, data, index, phase, year, w, h)
 				// console.log(t0);
 				return c[0];
 			}).attr({
-				'd' : line
+				'd' : line,
+				'data-year' : year,
+				'data-phase' : phase,
+				'data-key' : SPLINE_MEASURE,
+				'data-value' : planesByYearPhase[year][phase][SPLINE_MEASURE]
 			});
+		} else {
+			vis.datum([{
+				'x' : 0,
+				'y' : 0
+			}]).attr('d', line);
 		}
 	};
 	self.draw();
-	// d3.timer(function(elapsed){
-	//
-	// })
-	// line.interpolate('cardinal');
 	return self;
 };
+function parseTooltipText(me)
+{
+	var key = target_measures_titles[me.attr('data-key')];
+	var val = me.attr('data-value');
+	var year = me.attr('data-year');
+	var ph = (me.attr('data-phase')) ? phases[phaseMap[me.attr('data-phase')]].name : "";
+
+	var html = "";
+	if (ph)
+		html += "<span class='tooltip-key'>" + ph + " </span><br>";
+	html += "<span class='tooltip-key'>" + year + " </span><br>";
+	html += "<span class='tooltip-key'>" + key + ": </span>";
+	html += " <span class='tooltip-value'>" + val + "</span>";
+	return html;
+}
+
 function scalePoints(pts, w, h)
 {
 	for (var i = 0, j = pts.length; i < j; i++) {
@@ -769,28 +878,6 @@ function scalePoints(pts, w, h)
 		pts[i].y *= h;
 	}
 	return pts;
-}
-var cycles = 0;
-d3.timer(function(elapsed)
-{
-	t = (t + (elapsed - last) / 5000) % 1;
-	//    t=1
-	last = elapsed;
-	time+=t;
-	cycle = Math.floor(time)%10;
-	updateSplines(t, 2000+cycle);
-
-});
-
-function updateSplines(t0, year)
-{
-	// console.log("splines "+splines.length)
-	// console.log(year);
-	for (var s in splines[year])
-	{
-		// console.log(s);
-		splines[year][s].update(t0);
-	}
 }
 
 function interpolate(d, p)
@@ -843,7 +930,7 @@ stackedBar = function(target_g, id)
 	var self = {
 	}, survived = 0, died = 0, total = 0, vis, bars, died_bar, survived_bar, survived_text, died_text, survived_count, died_count;
 	var w = parseInt($(target_g).css("width")), h = parseInt($(target_g).css("height"));
-	console.log(target_g + " dim: " + w + "\t" + h);
+	// console.log(target_g + " dim: " + w + "\t" + h);
 	//    var h, w;
 	self.draw = function()
 	{
@@ -901,41 +988,96 @@ stackedBar = function(target_g, id)
 		bars.append("g").attr("class", "counter-axis").call(xAxis).attr("transform", "translate(" + 0 + "," + (h / 2) + ")");
 
 	};
-	self.update = function(d1, d2, reset)
+	/*
+	 self.update2 = function(d1, d2, reset)
+	 {
+	 survived += d1;
+	 died += d2;
+	 total = survived + died;
+
+	 //        console.log(survived + "\t" + died);
+	 var sw = (reset) ? w / 2 : survived / total * w, dw = (reset) ? w / 2 : died / total * w;
+
+	 if (total > 0 || reset) {
+	 survived_count.style('font-size', '20px').transition().duration(duration / 2).text("" + survived).attr({
+	 "x" : dw + svg_padding
+	 }).style('font-size', '15px');
+
+	 died_count.style('font-size', '20px').transition().duration(duration / 2).text("" + died).attr({
+	 "x" : dw - svg_padding
+	 }).style('font-size', '15px');
+
+	 died_bar.transition().duration(duration / 2).attr({
+	 "width" : dw
+	 });
+	 survived_bar.transition().duration(duration / 2).attr({
+	 "width" : sw,
+	 "x" : dw
+	 });
+
+	 }
+
+	 };*/
+	self.update = function(year, phase, reset)
 	{
-		survived += d1;
-		died += d2;
+		var dur = min_duration;
+		// console.log('updating countBar');
+		// var sw = (reset) ? w / 2 : survived / total * w, dw = (reset) ? w / 2 : died / total * w;
+		survived = 0;
+		died = 0;
+		if (year) {
+			for (var i = 0, j = active_years.length; i < j && active_years[i].year < year; i++) {
+				var yr = active_years[i].year;
+
+				died += planesByYear[yr]['total_fatalities'].sum;
+				survived += planesByYear[yr]['total_survivors'].sum;
+
+			}
+			// console.log(phase);
+			if (phase)
+				for (var i = 0, j = new_phases.length; i < j; i++) {
+					var ph = new_phases[i].code;
+					if (planesByYearPhase[year][ph]) {
+						// console.log('adding '+ph+'\t'+year)
+						died += planesByYearPhase[year][ph]['total_fatalities'].sum;
+						survived += planesByYearPhase[year][ph]['total_survivors'].sum;
+					}
+					if (ph === phase)
+						break;
+				}
+		}
+
+		var prev_total = total;
 		total = survived + died;
+		// console.log(year + '\t' + phase + '\t' + survived + '\t' + died + '\t' + total + '\t' + prev_total);
+		var sw = (total === 0 || reset) ? w / 2 : survived / total * w, dw = (total == 0) ? w / 2 : died / total * w;
 
-		//        console.log(survived + "\t" + died);
-		var sw = (reset) ? w / 2 : survived / total * w, dw = (reset) ? w / 2 : died / total * w;
-
-		if (total > 0 || reset) {
-			survived_count.style('font-size', '20px').transition().duration(duration / 2).text("" + survived).attr({
+		// if (total > 0) {
+		if (total !== prev_total) {
+			survived_count.style('font-size', '20px').transition().duration(dur).text("" + survived).attr({
 				"x" : dw + svg_padding
 			}).style('font-size', '15px');
 
-			died_count.style('font-size', '20px').transition().duration(duration / 2).text("" + died).attr({
+			died_count.style('font-size', '20px').transition().duration(dur).text("" + died).attr({
 				"x" : dw - svg_padding
 			}).style('font-size', '15px');
 
-			died_bar.transition().duration(duration / 2).attr({
+			died_bar.transition().duration(dur).attr({
 				"width" : dw
 			});
-			survived_bar.transition().duration(duration / 2).attr({
+			survived_bar.transition().duration(dur).attr({
 				"width" : sw,
 				"x" : dw
 			});
-
 		}
-
+		// }
 	};
 	self.reset = function()
 	{
 		survived = 0;
 		died = 0;
 
-		self.update(0, 0, true);
+		self.update(false, false, true);
 	};
 	self.draw();
 	return self;
@@ -944,95 +1086,82 @@ stackedBar = function(target_g, id)
 backgroundPhaseBarChart = function(target, id, w, h, trans_x, trans_y)
 {
 	var self = {
-	}, data = [], min, max, ids = [], active = false, vis, yScale, xScale, measure;
+	}, data = {}, min, max, ids = [], active = false, vis, yScale, xScale, measure;
+	var last_used_year, last_t0;
 	if (!trans_x)
 		trans_x = 0;
 	if (!trans_y)
 		trans_y = 0;
 	self.init = function(msr)
 	{
-
-		measure = msr;
+		if (!msr)
+			msr = CHART_MEASURE;
 		self.refreshData(active_years);
-		// console.log(data);
-
-		// console.log(max);
+		self.changeMeasure(msr);
 		if (!active)
 			self.draw();
 	};
-	self.refreshData = function(year_list)
+	self.changeMeasure = function(msr)
+	{
+		measure = msr;
+		d3.select('#phase-chart-bar-title').transition().duration(duration).text(target_measures_titles[measure]);
+		yScale = d3.scale.linear().domain([0, max[measure]]).range([0, h]);
+		xScale = d3.scale.linear().domain([0, 1]).range([0, w]);
+		self.draw();
+		self.update(last_used_year);
+	};
+	self.refreshData = function(years)
 	{
 		// console.log(year_list);
 		ids = [];
-		data = [];
-		console.log(year_list);
-		for (var i = 0, j = year_list.length; i < j; i++) {
+		data = {};
+		max = {};
+		for (var k = 0, l = target_measures.length; k < l; k++) {
+			var tm = target_measures[k];
+			max[tm] = 0;
+			data[tm] = {};
+			for (var p = 0, q = new_phases.length; p < q; p++) {
+				var phase = new_phases[p].code;
+				// console.log(phase);
 
-			var year = (year_list[i].year) ? year_list[i].year : year_list[i];
-			// console.log(year);
-			var list = planesByYear[keyMaps["year"][year]].values.list;
-			ids = $.merge(ids, list);
-		}
-		// console.log(ids);
-		data = d3.nest().key(function(d)
-		{
-			//                    console.log(planes[idMap[d]]);
-			return planes[idMap[d]].phase_code;
-		}).key(function(d)
-		{
-			return planes[idMap[d]].year;
-		}).sortKeys(d3.ascending).rollup(function(leaves)
-		{
-			if (measure === "count")
-				return leaves.length;
-			else
-				return d3.sum(leaves, function(d)
-				{
-					return d[measure];
-				});
-		}).entries(ids);
+				data[tm][phase] = {};
+				var counter = 0;
+				for (var i = 0, j = years.length; i < j; i++) {
+					var year = (years[i].year) ? years[i].year : years[i];
+					// console.log(planesByYearPhase[year][phase]);
+					if (planesByYearPhase[year][phase]) {
+						counter += (tm === 'count') ? planesByYearPhase[year][phase][tm] : planesByYearPhase[year][phase][tm]['sum'];
+					}
+					data[tm][phase][year] = counter;
+					if (counter > max[tm])
+						max[tm] = counter;
 
-		for (var i = 0, j = data.length; i < j; i++) {
-			data[i]['sum'] = d3.sum(data[i].values, function(d)
-			{
-				return d.values;
-			});
+				}
+			}
 		}
-		max = d3.max(data, function(d)
-		{
-			console.log(d);
-			return d['sum'];
-		});
-		console.log('max=' + max);
-		yScale = d3.scale.linear().domain([0, max]).range([0, h]);
-		xScale = d3.scale.linear().domain([0, 1]).range([0, w]);
+		// console.log(data);
+		// console.log(max);
+
 	};
 	self.draw = function()
 	{
 
 		if (!active) {
+			active = true;
 			console.log('drawing ' + id);
 			vis = d3.selectAll(target).select('svg').append("g").attr({
 				'id' : id,
 				'class' : "background-bar-chart"
 			}).attr("transform", "translate(" + trans_x + "," + trans_y + ")");
-			vis.selectAll('rect').data(data).enter().append("rect").attr({
+			vis.selectAll('rect').data(new_phases).enter().append("rect").attr({
 				x : function(d)
 				{
-					// console.log(d);
-					var phase_code = d.key;
-					var phase = phases[phaseMap[phase_code]];
-					// console.log(phase);
-					//console.log(phase);
-					return xScale(phase.x);
-
+					return xScale(d.x);
 				},
-				y : h,
+				y : 0,
 				width : function(d)
 				{
-					var phase_code = d.key;
-					var phase = phases[phaseMap[phase_code]];
-					return xScale(phase.size);
+					return xScale(d.size);
 				},
 				height : function(d)
 				{
@@ -1040,46 +1169,332 @@ backgroundPhaseBarChart = function(target, id, w, h, trans_x, trans_y)
 				},
 				'id' : function(d)
 				{
-					return 'phase-chart-bar-' + d.key;
+					return 'phase-chart-bar-' + d.code;
 				},
 				'class' : 'phase-chart-bar'
 			});
+
+			vis.selectAll('.phase-chart-bar').on('mouseenter', function()
+			{
+
+				var me = $(this);
+				$("#tooltip").css("visibility", "visible").html(parseTooltipText(me)).css("top", function()
+				{
+					return (event.pageY - 30) + "px";
+				}).css("left", function()
+				{
+					return (event.pageX - 30) + "px";
+				});
+				console.log('displaying tooltip');
+
+			}).on('mouseleave', function()
+			{
+				d3.select("#tooltip").style("visibility", "hidden");
+			});
+			vis.append('text').attr({
+				'id' : 'phase-chart-bar-title',
+				'class' : 'chart-title',
+				'x' : w-10,
+				'y' : h - 20,
+				'text-anchor' : 'right'
+			}).text(target_measures_titles[measure]);
+			id = '#' + id;
+			vis = vis.select(id);
 		}
-		active = true;
+
 	};
-	self.update = function(year)
+	self.update = function(year, phase, value)
 	{
+		// if (phase === 'LDG')
+		// console.log(phase + '\t' + value);
+		dur = min_duration;
 		if (!active) {
 			self.init();
 		}
-		if (data.length > 0) {
+		if (!year)
+			year = last_used_year;
+			last_used_year = year;
 
-			// console.log(data);
-			console.log('updating ' + id);
-			for (var i = 0, j = data.length; i < j; i++) {
+		// last_phase = phase;
+		vis = d3.select(id);
 
-				var val = 0, key = '#phase-chart-bar-' + data[i].key;
-				// console.log(data[i]);
-				for (var k = 0, l = data[i].values.length; k < l && data[i].values[k].key <= year; k++)
-					val += data[i].values[k].values;
-				console.log(val + "\t" + max);
-				vis.select(key).transition().duration(duration).attr({
-					height : function()
-					{
-						console.log(val + "\t" + yScale(val));
-						return (val / max) * h;
-					},
-					'y' : h - val / max * h,
-					'data-value' : val
-				});
+		if (!measure)
+			measure = CHART_MEASURE;
+		mname = target_measures_titles[measure];
+		var toUpdate = [];
+		var toReturn = [];
+		stopUpdate = false;
+		if (phase)
+			for (var i = 0, j = new_phases.length; i < j; i++) {
+				var ph = new_phases[i].code;
+				if (data[measure][ph][year] && !stopUpdate) {
+					toUpdate.push(ph);
+
+				}
+				if (stopUpdate) {
+					toReturn.push(ph);
+				}
+				if (ph === phase) {
+					if (i === j - 1)
+						toUpdate.push(ph);
+					stopUpdate = true;
+				}
+
 			}
+
+		for (var i = 0, j = toUpdate.length; i < j; i++) {
+			ph = toUpdate[i];
+
+			key = '#phase-chart-bar-' + ph;
+			// console.log(key);
+			// val = (value>0)?data[measure][ph][year]:0;
+			val = data[measure][ph][year];
+			vis.select(key).transition().duration(dur).attr({
+				height : function()
+				{
+					// console.log(val + "\t" + yScale(val));
+					return (val / max[measure]) * h;
+				},
+				// 'y' : 0,
+				'data-value' : val,
+				'data-key' : measure,
+				'data-year' : year,
+				'data-phase' : ph
+			});
+
+		}
+		var prev_year;
+		for (var i = 0, j = active_years.length; i < j; i++) {
+			if (i > 0 && year === active_years[i].year) {
+				prev_year = active_years[i - 1].year;
+				break;
+			}
+		}
+		for (var i = 0, j = toReturn.length; i < j; i++) {
+			ph = toReturn[i];
+
+			key = '#phase-chart-bar-' + ph;
+			val = data[measure][ph][prev_year];
+			vis.select(key).transition().duration(dur).attr({
+				height : function()
+				{
+					// console.log(val + "\t" + yScale(val));
+					return (val / max[measure]) * h;
+				},
+				// 'y' : 0,
+				'data-value' : val,
+				'data-key' : measure,
+				'data-year' : prev_year,
+				'data-phase' : ph
+			});
+
 		}
 
 	};
+	self.init();
 	return self;
 
 };
+lineChart = function(target, id)
+{
+	var self = {}, data = [], years = [], vis, xScale, yScale, xAxis, yAxis, lin, max = 0, min_year, max_year, width, height, measure;
+	var margin = {
+		top : 5,
+		right : 5,
+		bottom : 20,
+		left : 40
+	};
+var last_used_year;
+	self.draw = function()
+	{
+		width = parseInt($(target).css("width")) - margin.right - margin.left;
+		height = parseInt($(target).css("height")) - margin.top - margin.bottom;
+		console.log(width + '\t' + height)
+		xScale = d3.scale.linear().range([0, width]);
 
+		yScale = d3.scale.linear().range([height, 0]);
+
+		xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+
+		yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+		lin = d3.svg.line().x(function(d)
+		{
+			// console.log(d);
+			return xScale(d.value);
+		}).y(function(d)
+		{
+			return yScale(d.year);
+		});
+		vis = d3.select(target).append('svg').attr({
+			'id' : id,
+			'height' : height + margin.top + margin.bottom,
+			'width' : width + margin.left + margin.right
+		}).append('g').attr({
+			'id' : id + '-g',
+			'class' : 'line-chart',
+			"transform" : "translate(" + (margin.left - 10) + "," + margin.top + ")"
+		});
+		vis.append("g").attr({
+			"class" : "x axis",
+			'id' : 'line-x-axis',
+			"transform" : "translate(0," + height + ")"
+		}).call(xAxis);
+		vis.append("g").attr({
+			"class" : "y axis",
+			'id' : 'line-y-axis'
+		}).call(yAxis).append("text").attr("transform", "rotate(-90)").attr({
+			"dy" : ".71em"
+			// ,'y' : 6
+		}).style("text-anchor", "end").text("Year");
+		data = [{
+			'year' : 0,
+			'value' : 0
+		}];
+		vis.append('g').append("path").datum(data).attr({
+			"class" : "line-chart-line",
+			"d" : lin,
+			'id' : id + '-line'
+		});
+		vis.append('g').attr('id', 'line-chart-circles');
+		id = '#' + id;
+	};
+	self.changeMeasure = function(msr)
+	{
+		if (!msr)
+			measure = CHART_MEASHRE
+		else
+			measure = msr;
+		self.refreshData(measure);
+		self.update(last_used_year, false);
+		
+	}
+	self.refreshData = function(msr, yrs)
+	{
+		if (!yrs)
+			years = active_years;
+		else
+			years = yrs;
+		if (!msr)
+			measure = CHART_MEASURE;
+		max = 0;
+		for (var i = 0, j = years.length; i < j; i++) {
+			var d;
+			var year = years[i].year;
+			if (measure === 'count')
+				d = planesByYear[year][measure];
+			else
+				d = planesByYear[year][measure].sum;
+
+			max = (d > max) ? d : max;
+		}
+		console.log('line chart max =' + max);
+		min_year = years[0].year;
+		max_year = years[years.length - 1].year;
+		xScale.domain([0, max]);
+		yScale.domain([min_year, max_year]);
+		var yrs = []
+		for (var i = 0, j = years.length; i < j; i++)
+			yrs.push(years[i].year);
+
+		// console.log(yrs);
+		yAxis.scale(yScale).ticks(5).tickFormat(d3.format('d')).innerTickSize(-width);
+		// .tickValues(yrs)
+		xAxis.scale(xScale).ticks(5).innerTickSize(-height);
+		d3.select('#line-y-axis').transition().duration(min_duration).call(yAxis);
+		d3.select('#line-x-axis').transition().duration(min_duration).call(xAxis);
+
+		$('.line-chart-circle').remove();
+
+	};
+	self.reset = function()
+	{
+
+	};
+
+	self.update = function(year, reset)
+	{
+		last_used_year = year;
+		// console.log(measure);
+		if (reset)
+			data = [{
+				'year' : 0,
+				'value' : 0
+			}];
+		else {
+			data = [];
+			for (var i = 0, j = active_years.length; i < j && active_years[i].year <= year; i++) {
+				var d;
+				var yr = active_years[i].year;
+				if (measure === 'count')
+					d = planesByYear[yr][measure];
+				else
+					d = planesByYear[yr][measure].sum;
+				data.push({
+					'year' : yr,
+					'value' : d
+				});
+			}
+			// console.log(data);
+		}
+		d3.select(id + '-line').datum(data).attr({
+			'd' : lin
+		});
+		d3.selectAll('.line-chart-circle').style('visibility', 'hidden');
+		d3.select('#line-chart-circles').selectAll('circle').data(data).enter().append('circle').attr({
+			'cx' : function(d)
+			{
+				return xScale(d.value);
+			},
+			'cy' : function(d)
+			{
+				return yScale(d.year);
+			},
+			'r' : (active_years.length<11)? 10:2,
+			'class' : function(d)
+			{
+				return 'line-chart-circle line-chart-circle-' + d.year;
+			},
+			'data-key' : measure,
+			'data-year' : function(d)
+			{
+				// console.log(d);
+				return d.year;
+			},
+			'data-value' : function(d)
+			{
+				return d.value;
+			}
+		}).style('visibility', 'visible');
+		for (var i = 0, j = active_years.length; i < j && active_years[i].year <= year; i++) {
+			var cl = '.line-chart-circle-' + active_years[i].year;
+			d3.selectAll(cl).style('visibility', 'visible');
+			$(cl).unbind('mouseenter').unbind('mouseleave');
+			$(cl).on('mouseenter', function()
+			{
+				var me = $(this);
+
+				$("#tooltip").css("visibility", "visible").html(parseTooltipText(me)).css("top", function()
+				{
+					return (event.pageY - 60) + "px";
+				}).css("left", function()
+				{
+					return (event.pageX + 30) + "px";
+				});
+				// console.log('displaying tooltip');
+
+			}).on('mouseleave', function()
+			{
+				d3.select("#tooltip").style("visibility", "hidden");
+			});
+
+		}
+
+	};
+	self.draw();
+	self.refreshData();
+	return self;
+};
 function x(d)
 {
 	return d.x;
@@ -1090,6 +1505,105 @@ function y(d)
 	return d.y;
 }
 
+var cycles = 0;
+
+/****************
+ *  TIMER
+ ******************/
+
+function startTimer()
+{
+
+	var last_t = 0;
+	duration = max_duration;
+	time = getSliderValue();
+	if (active_years[Math.floor(time)])
+		current_year = active_years[Math.floor(time)].year;
+	else
+		current_year = active_years[Math.floor(time)].year - 1;
+	var temp_t = 0;
+	if (ANIMATE) {
+		console.log('strating time ' + time);
+		console.log("starting from " + current_year);
+		//        d3.timer.flush();
+		var prev_time = 0;
+		d3.timer(function(elapsed)
+		{
+			var delta_t = (elapsed - last) / duration;
+			temp_t += delta_t;
+			last = elapsed;
+			time += delta_t;
+			updateSliderValue(time);
+			// if (temp_t >= delta) {
+			// // console.log("refresh");
+			// temp_t -= delta;
+			// time += delta;
+			// updateSliderValue(time);
+			// }
+			if (time - prev_time > 1) {
+
+				duration /= acceleration;
+				duration = (duration < min_duration) ? min_duration : duration;
+				console.log('accelerating ' + duration + "\t" + time)
+				prev_time = time;
+			}
+
+			if (time > parseFloat($('#play-slider').attr("max"))) {
+				toggleAnimation();
+			}
+			return !ANIMATE;
+		});
+	}
+}
+
+function toggleAnimation()
+{
+	// console.log("toggling " + ANIMATE);
+	if (ANIMATE)
+		stopAnimation();
+	else
+		startAnimation();
+}
+
+function stopAnimation()
+{
+	ANIMATE = false;
+	$("#play-button").text("\u25BA");
+}
+
+function startAnimation()
+{
+	ANIMATE = true;
+	console.log("starting animation");
+	$("#play-button").text("\u2016");
+	startTimer();
+}
+
+function updateCharts(year, comp, updateCounter)
+{
+	var year_list = [];
+	var to = 0, tf = 0, ts = 0;
+	for (var i = 0, j = active_years.length; i < j && active_years[i].year <= year; i++) {
+		year_list.push(active_years[i].year);
+		to += planesByYear[year]['total_occupants'];
+		tf += planesByYear[year]['total_fatalities'];
+		ts += planesByYear[year]['total_survivors'];
+
+	}
+	updateSplines(comp, year);
+	// if (updateCounter)
+	// countBar.update(year);
+
+}
+
+function updateSplines(t0, year)
+{
+	for (var i in splines) {
+		// console.log(s);
+		splines[i].update(t0, year);
+	}
+}
+
 /**********************
  *  SLIDER
  *******************/
@@ -1098,6 +1612,7 @@ function getSliderValue()
 	return parseFloat($('#play-slider').val());
 }
 
+var prev_active_phase;
 function updateSliderValue(value)
 {
 	if (value)
@@ -1105,26 +1620,58 @@ function updateSliderValue(value)
 	else
 		value = $('#play-slider').val();
 	time = value;
-	$('#slider-label').text(value);
+
 	var year_index = parseInt(Math.floor(value));
-	for (var i = 0, j = active_years.length; i < j; i++) {
-		var year = active_years[i].year;
-		var v = (i < year_index) ? 1 : (i === year_index) ? value % 1 : 0;
+	if (active_years[year_index]) {
+		cyear = active_years[year_index].year;
 
-		if (v !== active_years[i].t) {
-			updateCharts(year, v, true, true);
-			active_years[i].t = v;
-		}
-	}
-	if (year_index < active_years.length) {
-		var year = active_years[year_index].year;
-		if (year !== current_year) {
+		$('#slider-label').text(cyear + "." + Math.floor(time % 1 * 100));
+		$("#year-text").text("" + cyear);
+		for (var i = 0, j = active_years.length; i < j; i++) {
+			var year = active_years[i].year;
+			var v = (i < year_index) ? 1 : (i === year_index) ? value % 1 : 0;
 
-			current_year = year;
-			phaseCountBar.update(year);
-			$("#year-text").text("" + year);
+			if (v !== active_years[i].t) {
+				updateCharts(year, v, true);
+				active_years[i].t = v;
+			}
 		}
+		var t0 = time % 1, active_phase;
+		if (value > 0) {
+			for (var i = 0, j = new_phases.length; i < j; i++) {
+				var phase = new_phases[i];
+				if (phase.cum_size - phase.size < t0)
+					active_phase = phase.code;
+				else
+					break;
+
+			}
+		}
+
+		if (active_phase !== prev_active_phase || current_year !== cyear) {
+			phaseCountBar.update(cyear, active_phase, value);
+			countBar.update(cyear, active_phase, false);
+		}
+		var temp;
+		if (current_year === cyear)
+			prev_active_phase = active_phase;
+		else {
+			prev_active_phase = temp;
+			timeLineChart.update(cyear);
+		}
+		current_year = cyear;
+
 	}
+	//
+	// if (year_index < active_years.length) {
+	// var year = active_years[year_index].year;
+	// if (year !== current_year) {
+	//
+	// current_year = year;
+	// phaseCountBar.update(year);
+	// $("#year-text").text("" + year);
+	// }
+	// }
 }
 
 function setSliderValues(values, step)
@@ -1134,4 +1681,7 @@ function setSliderValues(values, step)
 		max : values.length,
 		step : step
 	});
+
+	$('#player-start').text(values[0].year);
+	$('#player-finish').text(values[values.length - 1].year);
 }

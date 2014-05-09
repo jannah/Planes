@@ -5,59 +5,90 @@ To change this template file, choose Tools | Templates
 and open the template in the editor.
 -->
 <html>
-    <head>
-        <title>Planes</title>
-        <meta charset="windows-1252">
-        <!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
-        <link rel="stylesheet" href="_css/style.css">
-        <!--<link rel="stylesheet" href="_css/ui-darkness/jquery-ui-1.10.4.custom.css">-->
-        <script src="_js/jquery-1.11.0.min.js"></script>
-        <!--<script src="_js/jquery-ui-1.10.4.custom.min.js"></script>-->
-        <script src="_js/d3.v3.min.js"></script>
-        <script src="_js/jquery.csv-0.71.min.js"></script>
-        <script src="_js/csv-ops.js"></script>
-        <script src="_js/script.js"></script>
-        <!-- <script src="_js/animated-bezier.js"></script> -->
-    </head>
+	<head>
+		<title>Planes</title>
+		<meta charset="windows-1252">
+		<!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+		<link rel="stylesheet" href="_css/style.css">
+		<!--<link rel="stylesheet" href="_css/ui-darkness/jquery-ui-1.10.4.custom.css">-->
+		<script src="_js/jquery-1.11.0.min.js"></script>
+		<!--<script src="_js/jquery-ui-1.10.4.custom.min.js"></script>-->
+		<script src="_js/d3.v3.min.js"></script>
+		<script src="_js/jquery.csv-0.71.min.js"></script>
+		<script src="_js/csv-ops.js"></script>
+		<script src="_js/script.js"></script>
+		<!-- <script src="_js/animated-bezier.js"></script> -->
+	</head>
 
-    <body>
+	<body>
 
-        <div id="top-menu">
-            
-            <!--<span class="counter-span"><label id="year-label"></label></span>-->
-            <div id="top-menu-tabs">
-                <ul><li class='selected-top-menu-item'>Browse By Decade</li>
-                    <li class='top-menu-item'>Worst 100</li>
-                    <li class='top-menu-item'>Unusual 100</li>
-                </ul>
+		<div id="top-menu">
 
-            </div>
-            <div id="sub-menu">
-                <div class='sub-menu-item' id="decades" ><ul id="decades-select"></ul></div>
-                <div class='sub-menu-item' id ="worst-desc"></div>
-                <div class='sub-menu-item' id ="unusual-desc"></div>
-            </div>
-        </div>
+			<!--<span class="counter-span"><label id="year-label"></label></span>-->
+			<div id="top-menu-tabs">
+				<ul>
+					<li class='selected-top-menu-item'>
+						Browse By Decade
+					</li>
+					<li class='top-menu-item'>
+						Worst 100
+					</li>
+					<li class='top-menu-item'>
+						Unusual 100
+					</li>
+				</ul>
 
-        <div id="chart-area"> 
+			</div>
+			<div id="sub-menu">
+				<div class='sub-menu-item' id="decades" >
+					<ul id="decades-select"></ul>
+				</div>
+				<div class='sub-menu-item' id ="worst-desc"></div>
+				<div class='sub-menu-item' id ="unusual-desc"></div>
+			</div>
+		</div>
 
-            <div id="counter-chart"></div>
-            <div id="plane-curves"></div>
-            <div id="narratives"></div>
-            <div id="player">
-                <!--<input type='button' id='play-button'/>-->
-                <input id="play-button" type="button" onclick="toggleAnimation()" value="&#9658;"/>
-                <input id='play-slider' type="range" min="0" max="10" value="0" step="0.1" onchange='updateSliderValue()' />
-                <output for='play-slider' id='slider-label'></output>
-            </div>
-            <div id="side_menu"> 
-                <ul id='side-menu-list'>
-                    <li id='accidents-chart-button' class='side-menu-item'>#</li>
-                    <li id='survivors-chart-button' class='side-menu-item'>S</li>
-                    <li id='fatalities-chart-button' class='side-menu-item'>F</li>
-                </ul>
-            </div>
-            <div id="tooltip"></div>
-        </div>
-    </body>
+		<div id="chart-area">
+
+			<div id="counter-chart"></div>
+			<div id="plane-curves"></div>
+			<div id="narratives"></div>
+			<div id="player">
+				<!--<input type='button' id='play-button'/>-->
+				<input id='play-slider' type="range" min="0" max="10" value="0" step="0.1" onchange='updateSliderValue()' />
+				<table id='slider-legend'>
+					<tr>
+						<td id='player-start'></td><td id='player-middle'><output for='play-slider' id='slider-label'></output></td><td id='player-finish'></td>
+					</tr>
+				</table>
+				<output for='play-slider' id='slider-label'></output>
+			</div>
+			<div id="side_menu">
+				<!-- <input id="play-button" type="button" onclick="toggleAnimation()" value="&#9658;"/> -->
+
+				<ul id='side-menu-list'>
+					<li id="play-button" type="button" class='side-menu-item' onclick="toggleAnimation()" >
+						&#9658;
+					</li>
+					<li class='side-menu-item dummy-side-menu-item'></li>
+					<li id='accidents-chart-button' data-measure='count' class='selected-side-menu-item side-menu-item measure-option' >
+						#
+					</li>
+					<li id='survivors-chart-button' data-measure='total_survivors' class='unselected-side-menu-item side-menu-item measure-option' >
+						S
+					</li>
+					<li id='fatalities-chart-button' data-measure='total_fatalities' class='unselected-side-menu-item side-menu-item measure-option'>
+						F
+					</li>
+					<li id='fatalities-chart-button' data-measure='total_occupants' class='unselected-side-menu-item side-menu-item measure-option' >
+						O
+					</li>
+				</ul>
+
+			</div>
+			<div id="tooltip"></div>
+		</div>
+		<div id='worst-area'></div>
+		<div id='weird-area'></div>
+	</body>
 </html>
