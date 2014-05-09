@@ -71,12 +71,7 @@ vis.selectAll("text.controltext")
         });
 
 var last = 0;
-d3.timer(function(elapsed) {
-    t = (t + (elapsed - last) / 5000) % 1;
-//    t=1
-    last = elapsed;
-    update();
-});
+
 
 function update() {
     var count = 0;

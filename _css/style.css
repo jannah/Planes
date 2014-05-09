@@ -7,8 +7,14 @@ and open the template in the editor.
     Created on : Apr 28, 2014, 9:44:08 PM
     Author     : Jannah
 */
+/*
+@font-fact{
+	font-family: Aliquam;
+	src: url('Aliquam.tff');
+}*/
 html, body {
     height: 100%;
+    font-family: sans-serif;
 }
 
 html {
@@ -21,7 +27,7 @@ body{
     display: table-cell;
     vertical-align: middle;
     background-color: black;
-    font-family: sans-serif;
+    /*font-family: sans-serif;*/
     color:white;
     width: 1000px;
     padding: 0px;
@@ -78,13 +84,13 @@ body{
 #chart-area{
     width:100%;
     padding: 0;
-    height: 450px;
+    height: 550px;
     display: inline-block;
     float: left;
 }
 #narratives{
     width: 25%;
-    height: 350px;
+    height: 400px;
     display: inline-block;
     float: right;
     background-color:  rgba(255,255,255,.1);
@@ -95,7 +101,7 @@ body{
 #plane-curves{
     width: 75%;
     padding: 0px;
-    height: 300px;
+    height: 400px;
     display: inline-block;
     float: left;
 }
@@ -165,8 +171,8 @@ body{
     width:20%;
     border: 1px rgb(255,255,255);
     max-width: 200px;
-    height: 50px;
-    line-height: 3em;
+    height: 30px;
+    line-height: 1.5em;
     vertical-align: middle;
     text-align: center;
 }
@@ -201,11 +207,12 @@ text{fill:white;
 }
 .curve, .line {
     fill: none;
-    stroke-width: 1px;
+    stroke-width: 2px;
 }
 .curve {
     /*stroke: red;*/
-    stroke-width: .5px;
+    /*stroke-width: .5px;*/
+    fill:red;
 
 }
 .curve-before{

@@ -1,0 +1,28 @@
+
+
+<div id='intro' class='slide1'>
+<div id='slide1'>
+<img src='img1.jpeg'/>
+<p>TEXT</p>
+<input type='button' onclick='nextSlide()'>
+</div>
+<div id='slide2'>
+<img src='img1.jpeg'/>
+<p>TEXT</p>
+<input type='button' onclick='nextSlide()'>
+</div>
+<div id='slide3'>
+<img src='img1.jpeg'/>
+<p>TEXT</p>
+<input type='button' onclick='nextSlide()'>
+</div>
+</div>
+
+current_slide = 1
+function nextSlid(){
+{
+$('#slide'+current_slide).hide();
+current_slide++;
+$('#slide'+current_slide).show();
+
+}

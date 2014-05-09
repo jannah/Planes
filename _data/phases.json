@@ -3,21 +3,21 @@
 	"code": "STD",
 	"long_code": "STANDING (STD)",
 	"order": 0,
-	"size":0.05
+	"size":0.1
 },
 {
 	"name": "Pushback/Towing",
 	"code": "PBT",
 	"long_code": "PUSHBACK/TOWING (PBT)",
 	"order": 1,
-	"size":0.05
+	"size":0.1
 },
 {
 	"name": "Taxi",
 	"code": "TXI",
 	"long_code": "TAXI (TXI)",
 	"order": 2,
-	"size":0.05
+	"size":0.1
 },
 {
 	"name": "Takeoff",
@@ -38,54 +38,54 @@
 	"code": "ENR",
 	"long_code": "EN ROUTE (ENR)",
 	"order": 5,
-	"size":0.3
+	"size":0.1
+},
+{
+	"name": "Unknown",
+	"code": "UNK",
+	"long_code": "UNKNOWN (UNK)",
+	"order": 6,
+	"size":0.1
 },
 {
 	"name": "Maneuvering",
 	"code": "MNV",
 	"long_code": "MANEUVERING (MNV)",
-	"order": 6,
+	"order": 7,
 	"size":0.1
 },
 {
 	"name": "Approach",
 	"code": "APR",
 	"long_code": "APPROACH (APR)",
-	"order": 7,
+	"order": 8,
 	"size":0.1
 },
 {
 	"name": "Landing",
 	"code": "LDG",
 	"long_code": "LANDING (LDG)",
-	"order": 8,
-	"size":0.15
+	"order": 9,
+	"size":0.1
 },
 {
 	"name": "Emergency Descent",
 	"code": "EMG",
 	"long_code": "EMERGENCY DESCENT (EMG)",
-	"order": 9,
+	"order": 10,
 	"size":0
 },
 {
 	"name": "Uncontrolled Descent",
 	"code": "UND",
 	"long_code": "UNCONTROLLED DESCENT (UND)",
-	"order": 10,
+	"order": 11,
 	"size":0
 },
 {
 	"name": "Postimpact",
 	"code": "PIM",
 	"long_code": "POST‐IMPACT (PIM)",
-	"order": 11,
-	"size":0
-},
-{
-	"name": "Unknown",
-	"code": "UNK",
-	"long_code": "UNKNOWN (UNK)",
 	"order": 12,
 	"size":0
 }]
