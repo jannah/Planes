@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html class="ocks-org do-not-copy">
+
+<head>
+    <meta charset="utf-8">
+    <title>Sankey Diagram</title>
+    <link rel="stylesheet" href="_css/sankey.css">
+ </head>
+
+
+<body>
+  <h1> AirPlane Crashes - Exploratory Tool</h1>
+  <p> Pick from the drop down boxes to explore more </p>
+  <select name="select1" id="select1">
+    <option value="select">-- select an option --</option>
+    <option value="Decade">Decade</option>
+    <option value="Make">Make</option>
+    <option value="Country">Country</option>
+    <option value="Month">Month</option>
+    <option value="Airplane Damage">Airplane Damage</option>
+    <option value="Phase">Phase</option>
+</select>
+<select name="select2" id="select2">
+    <option value="select">-- select an option --</option>
+</select>
+
+<input type="submit" id="submit"></input>
+<p id = "sankey"></p>
+
+<script src="http://d3js.org/d3.v2.min.js?2.9.1"></script>
+<script src="_js/sankey.js"></script>
+<script src="_js/jquery-1.11.0.min.js"></script>
+<script src="_js/mySankey.js"></script>
+</body>
+</html>

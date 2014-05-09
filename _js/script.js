@@ -642,7 +642,7 @@ function initPlaneChart(target)
 	initGradient(vis);
 	vis.append("g").attr("class", "x axis").attr("transform", "translate(0," + h + ")").call(xAxis);
 	drawPhaseLines(vis, w, curvesH);
-	drawYearText(vis, 20, curvesH - 10);
+	// drawYearText(vis, 20, curvesH - 10);
 
 	initSplines(target, "g-splines", w, curvesH, 0, 0, active_years);
 	// drawDecadeGroups();
@@ -806,7 +806,7 @@ splineLine = function(target, target_g, id, data, index, phase, year, w, h)
 		gradient.append("svg:stop").attr({
 			// "offset" : (phase.cum_size * 100 + 5) + "%",
 			"offset" : "100%",
-			"stop-color" : "#f00",
+			"stop-color" : "rgba(255,100,100,.5)",
 			"stop-opacity" : 1,
 			'id' : "gradient-" + phase + "-2"
 		});
@@ -1194,9 +1194,9 @@ backgroundPhaseBarChart = function(target, id, w, h, trans_x, trans_y)
 			vis.append('text').attr({
 				'id' : 'phase-chart-bar-title',
 				'class' : 'chart-title',
-				'x' : w-10,
-				'y' : h - 20,
-				'text-anchor' : 'right'
+				'x' : w - 20,
+				'y' : h,
+				'text-anchor' : 'end'
 			}).text(target_measures_titles[measure]);
 			id = '#' + id;
 			vis = vis.select(id);
@@ -1213,7 +1213,7 @@ backgroundPhaseBarChart = function(target, id, w, h, trans_x, trans_y)
 		}
 		if (!year)
 			year = last_used_year;
-			last_used_year = year;
+		last_used_year = year;
 
 		// last_phase = phase;
 		vis = d3.select(id);
@@ -1304,7 +1304,7 @@ lineChart = function(target, id)
 		bottom : 20,
 		left : 40
 	};
-var last_used_year;
+	var last_used_year;
 	self.draw = function()
 	{
 		width = parseInt($(target).css("width")) - margin.right - margin.left;
@@ -1367,7 +1367,7 @@ var last_used_year;
 			measure = msr;
 		self.refreshData(measure);
 		self.update(last_used_year, false);
-		
+
 	}
 	self.refreshData = function(msr, yrs)
 	{
@@ -1450,7 +1450,7 @@ var last_used_year;
 			{
 				return yScale(d.year);
 			},
-			'r' : (active_years.length<11)? 10:2,
+			'r' : (active_years.length < 11) ? 10 : 2,
 			'class' : function(d)
 			{
 				return 'line-chart-circle line-chart-circle-' + d.year;
@@ -1624,8 +1624,9 @@ function updateSliderValue(value)
 	var year_index = parseInt(Math.floor(value));
 	if (active_years[year_index]) {
 		cyear = active_years[year_index].year;
-
-		$('#slider-label').text(cyear + "." + Math.floor(time % 1 * 100));
+		var sub_time = Math.floor(time % 1 * 100);
+		sub_time = (sub_time < 10) ? "0" + sub_time : sub_time;
+		$('#slider-label').html(cyear + ".<span class='small-text'>" + sub_time + "</span>");
 		$("#year-text").text("" + cyear);
 		for (var i = 0, j = active_years.length; i < j; i++) {
 			var year = active_years[i].year;

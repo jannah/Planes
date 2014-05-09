@@ -14,7 +14,8 @@ and open the template in the editor.
 }*/
 html, body {
     height: 100%;
-    font-family: sans-serif;
+    /*font-family: sans-serif;*/
+    font-family: 'Droid Sans', sans-serif;
 }
 
 html {
@@ -26,7 +27,8 @@ html {
 body{
     display: table-cell;
     vertical-align: middle;
-    background-color: black;
+
+ background-color: rgb(15, 40, 57);
     /*font-family: sans-serif;*/
     color:white;
     width: 1000px;
@@ -86,6 +88,13 @@ body{
     height: 550px;
     display: inline-block;
     float: left;
+}
+#narrative-header{
+	    width: 25%;
+    height: 50px;
+    display: inline-block;
+    float: left;
+      background-color:  rgba(255,255,255,.1);
 }
 #narratives{
     width: 25%;
@@ -158,9 +167,10 @@ body{
 }
 .side-menu-item{
     display: inline-block;
-    width:20px;
-    height:20px;
+    width:25px;
+    height:25px;
     vertical-align: middle;
+    line-height:25px;
     text-align: center;
     padding:2px;
     
@@ -177,7 +187,8 @@ body{
     border: 1px rgb(255,255,255);
     max-width: 200px;
     height: 30px;
-    line-height: 1.5em;
+    line-height: 30px;
+    /*font-size: 1.5em;*/
     vertical-align: middle;
     text-align: center;
 }
@@ -187,6 +198,7 @@ body{
     display: inline-block;
     float: left;
 }
+
 #unusual-desc, #worst-desc{
 
 }
@@ -222,7 +234,7 @@ text{fill:white;
 }
 .line-chart-line{
 	stroke-width:2px;
-	stroke: blue;
+	stroke: rgb(220,220,220);
 	fill:none;
 }
 .line-chart-circle{
@@ -291,10 +303,10 @@ text{fill:white;
     height: 100px;
 }
 #survived-bar{
-    fill: green;
+    fill: rgba(100,255,100,.8);
 }
 #died-bar{
-    fill: red;
+    fill: rgba(255,100,100,.5);
 }
 .bar-text{
     fill:white;
@@ -304,6 +316,7 @@ text{fill:white;
     /*width: 61px;
     
     height: 30px;*/
+   margin-right: 30px;
    background-color: rgba(0,255,0, .1);
    cursor:pointer;
 }
@@ -338,11 +351,13 @@ input[type="range"]::-webkit-slider-thumb {
 #slider-legend td{
 	width:33%;
 }
-#slider-label{text-align:center; }
+#slider-label{text-align:center; font-size:1.5em;}
 #player-start{text-align:left;}
 #player-finish{text-align:right;}
 #player-middle{text-align:center;}
-
+.small-text{
+	font-size: .5em;
+}
 .axis text{
 	font-size:.7em;
 }
